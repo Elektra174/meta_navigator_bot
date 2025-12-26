@@ -8,21 +8,22 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from cerebras.cloud.sdk import Cerebras
 from aiohttp import web
 
-# --- НАСТРОЙКИ ---
+# --- КОНФИГУРАЦИЯ ---
 TOKEN = "8576599798:AAGzDKKbuyd46h9qZ_U57JC4R_nRbQodv2M"
 CEREBRAS_API_KEY = "csk-fmk4e6tm5e2vpkxcec3fn498jnk9nhf849hehjrpnd2jvwrn"
 CHANNEL_ID = "@metaformula_life"
 
-# Инициализация
+# Инициализация клиентов
 client = Cerebras(api_key=CEREBRAS_API_KEY)
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
+# --- ЛОГИКА СОСТОЯНИЙ ---
 class AuditState(StatesGroup):
     answering_questions = State()
 
 QUESTIONS = [
-    "1. Если бы ты был на 100% автором своей жизни, что бы ты изменил прямо сейчас? (Или ты пока просто наблюдатель?)",
+    "1. Если бы ты был на 100% автором своей жизни, что бы ты изменил прямо сейчас? (Или ты пока наблюдатель?)",
     "2. Опиши свой 'день сурка' тремя словами. Какие мысли крутятся в голове фоном, когда ты ничем не занят? (Твой режим заставки)",
     "3. Какая ситуация высасывает энергию больше всего? На какой физический объект она похожа?",
     "4. Где в теле ты чувствуешь зажим или холод, когда думаешь об этом? (Или ты 'только в голове'?)",
@@ -32,22 +33,30 @@ QUESTIONS = [
 ]
 
 SYSTEM_PROMPT = """
-Ты — «Мета-Навигатор», ИИ-агент Александра Лазаренко. Ты Проводник. 
-ЗАДАЧА: Проанализировать 7 ответов и выдать «Аудит Автопилота».
-ПРИНЦИПЫ: 
-1. Возвращай авторство (МПТ). 
-2. Используй термины 'застойная доминанта' и 'режим заставки'.
-3. Тон: системный, честный, глубокий.
-СТРУКТУРА: Индекс автопилота (%), Главный сбой, Метаформула решения, Напутствие.
+Ты — «Мета-Навигатор», интеллектуальный ИИ-агент Александра Лазаренко. Ты Проводник. 
+ТВОЯ ЗАДАЧА: Проанализировать ответы пользователя и выдать «Аудит Автопилота».
+
+ПРИНЦИПЫ:
+1. МПТ: Возвращай авторство. Не жалей 'жертву', а подсвечивай, как человек сам создает свой тупик. 
+2. Нейрофизиология: Используй понятия 'застойная доминанта' и 'режим заставки'. 
+3. Тон: Простой, честный, глубокий. Говори на языке 'прошивок', 'сбоев' и 'маршрутов'. Никакой эзотерики.
+
+СТРУКТУРА ТВОЕГО ОТВЕТА (ОТЧЕТА):
+- Индекс автопилота (в %).
+- Главный 'сбой' системы (суть застревания).
+- Твоя Метаформула решения (короткая фраза-код для переключения состояния).
+- Напутствие Проводника.
 """
 
+# --- ПРОВЕРКА ПОДПИСКИ ---
 async def is_subscribed(user_id):
     try:
         member = await bot.get_chat_member(chat_id=CHANNEL_ID, user_id=user_id)
         return member.status in ["member", "administrator", "creator"]
-    except:
+    except Exception:
         return False
 
+# --- ОБРАБОТЧИКИ (HANDLERS) ---
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message, state: FSMContext):
     await state.clear()
@@ -55,7 +64,7 @@ async def cmd_start(message: types.Message, state: FSMContext):
         builder = InlineKeyboardBuilder()
         builder.row(types.InlineKeyboardButton(text="Подписаться на канал", url="https://t.me/metaformula_life"))
         builder.row(types.InlineKeyboardButton(text="Я подписался!", callback_data="check_sub"))
-        await message.answer("Привет! Я — Мета-Навигатор. Подпишись на канал проекта, чтобы начать аудит:", reply_markup=builder.as_markup())
+        await message.answer("Привет! Я — Мета-Навигатор. Прежде чем мы начнем поиск сбоев в твоем автопилоте, подпишись на канал проекта:", reply_markup=builder.as_markup())
     else:
         await start_audit(message, state)
 
@@ -65,11 +74,14 @@ async def check_btn(callback: types.CallbackQuery, state: FSMContext):
         await callback.message.answer("Доступ открыт. Начинаем аудит.")
         await start_audit(callback.message, state)
     else:
-        await callback.answer("Подписка не найдена!", show_alert=True)
+        await callback.answer("Подписка не найдена! Вступи в канал.", show_alert=True)
 
 async def start_audit(message: types.Message, state: FSMContext):
-    await state.update_data(current_q=0, answers=) # ИСПРАВЛЕНО: добавлен пустой список
-    await message.answer("Я задам 7 вопросов. Отвечай честно.\n\n" + QUESTIONS)
+    # ТУТ ИСПРАВЛЕНА ОШИБКА: теперь список инициализируется как
+    await state.update_data(current_q=0, answers=)
+    await message.answer("Я задам 7 вопросов, чтобы увидеть твой автопилот. Отвечай честно, из глубины.")
+    await asyncio.sleep(1)
+    await message.answer(QUESTIONS)
     await state.set_state(AuditState.answering_questions)
 
 @dp.message(AuditState.answering_questions)
@@ -78,45 +90,50 @@ async def handle_questions(message: types.Message, state: FSMContext):
     q_idx = data.get('current_q', 0)
     answers = data.get('answers',)
     
-    answers.append(f"Q{q_idx+1}: {message.text}")
+    answers.append(f"Вопрос {q_idx+1}: {message.text}")
     new_idx = q_idx + 1
     
     if new_idx < len(QUESTIONS):
         await state.update_data(current_q=new_idx, answers=answers)
         await message.answer(QUESTIONS[new_idx])
     else:
-        await message.answer("Вычисляю твою Метаформулу... 🌀")
+        await message.answer("Данные получены. Навигатор вычисляет твою Метаформулу... 🌀")
         report = await generate_ai_report(answers)
         await message.answer(report)
-        await message.answer("Твой Авторский Маршрут начинается здесь. Жди анонсов в канале!")
+        await message.answer("Твой Авторский Маршрут начинается здесь. Будь на связи в канале!")
         await state.clear()
 
 async def generate_ai_report(answers):
+    user_input = "\n".join(answers)
     try:
         response = client.chat.completions.create(
             messages=,
             model="llama-3.3-70b",
             temperature=0.4,
-            top_p=0.9
+            top_p=0.9,
+            max_completion_tokens=2048
         )
         return response.choices.message.content
     except Exception as e:
-        return f"Ошибка Навигатора: {e}"
+        return f"Сбой в системе Навигатора: {e}. Попробуй позже."
 
-# Сервер для Render (Health Check)
-async def handle(request):
-    return web.Response(text="Bot is alive")
+# --- ВЕБ-СЕРВЕР ДЛЯ RENDER (HEALTH CHECK) ---
+async def handle_health(request):
+    return web.Response(text="Бот Мета-Навигатор живой")
 
 async def run_server():
     app = web.Application()
-    app.router.add_get('/', handle)
+    app.router.add_get('/', handle_health)
     runner = web.AppRunner(app)
     await runner.setup()
-    site = web.TCPSite(runner, '0.0.0.0', int(os.environ.get("PORT", 8080)))
+    # Берем порт из переменной окружения Render или 8080 по умолчанию
+    port = int(os.environ.get("PORT", 8080))
+    site = web.TCPSite(runner, '0.0.0.0', port)
     await site.start()
 
 async def main():
-    asyncio.create_task(run_server())
+    asyncio.create_task(run_server()) # Запуск сервера в фоне
+    print("Мета-Навигатор запущен...")
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
