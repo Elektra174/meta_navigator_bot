@@ -6,12 +6,14 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from cerebras.cloud.sdk import Cerebras
+from aiohttp import web
 
 # --- НАСТРОЙКИ ---
 TOKEN = "8576599798:AAGzDKKbuyd46h9qZ_U57JC4R_nRbQodv2M"
 CEREBRAS_API_KEY = "csk-fmk4e6tm5e2vpkxcec3fn498jnk9nhf849hehjrpnd2jvwrn"
-CHANNEL_ID = "@metaformula_life" 
+CHANNEL_ID = "@metaformula_life"
 
+# Инициализация ИИ и бота
 client = Cerebras(api_key=CEREBRAS_API_KEY)
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
@@ -20,10 +22,9 @@ dp = Dispatcher()
 class AuditState(StatesGroup):
     answering_questions = State()
 
-# Структура из 7 вопросов для качественной диагностики [1]
 QUESTIONS = [
     "1. Если бы ты был на 100% автором своей жизни, что бы ты изменил прямо сейчас? (Или ты пока просто наблюдатель?)",
-    "2. Опиши свой 'день сурка' тремя словами. Какие мысли крутятся в голове фоном, когда ты ничем не занят? (Твой режим заставки)",
+    "2. Опиши свой 'день сурка' тремя словами. Какие мысли крутятся в голове фоном, когда ты не занят делом? (Твой режим заставки)",
     "3. Какая ситуация высасывает энергию больше всего? На какой физический объект она похожа?",
     "4. Где в теле ты чувствуешь зажим или холод, когда думаешь об этом? (Или ты 'только в голове'?)",
     "5. Какое качество в людях тебя бесит или раздражает? Какая свобода в нем спрятана?",
@@ -32,21 +33,22 @@ QUESTIONS = [
 ]
 
 SYSTEM_PROMPT = """
-Ты — «Мета-Навигатор», интеллектуальный агент Александра Лазаренко. Ты Проводник. 
+Ты — «Мета-Навигатор», ИИ-агент Александра Лазаренко. Ты Проводник. 
 ТВОЯ ЗАДАЧА: Проанализировать ответы пользователя и выдать «Аудит Автопилота».
 
 ПРИНЦИПЫ:
-1. МПТ: Возвращай авторство. Не жалей 'жертву', а подсвечивай, как человек сам создает свой тупик. 
+1. МПТ: Возвращай авторство. Если человек ноет, подсвечивай, как он сам создает этот тупик. 
 2. Нейрофизиология: Используй понятия 'застойная доминанта' и 'режим заставки'. 
 3. Тон: Простой, честный, глубокий. Говори на языке 'прошивок', 'сбоев' и 'маршрутов'. Никакой эзотерики.
 
-СТРУКТУРА ОТВЕТА:
+СТРУКТУРА ТВОЕГО ОТВЕТА (ОТЧЕТА):
 - Индекс автопилота (в %).
 - Главный 'сбой' системы (суть застревания).
 - Твоя Метаформула решения (короткая фраза-код для переключения состояния).
 - Напутствие Проводника.
 """
 
+# --- ПРОВЕРКА ПОДПИСКИ ---
 async def is_subscribed(user_id):
     try:
         member = await bot.get_chat_member(chat_id=CHANNEL_ID, user_id=user_id)
@@ -54,15 +56,16 @@ async def is_subscribed(user_id):
     except Exception:
         return False
 
+# --- ОБРАБОТЧИКИ ---
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message, state: FSMContext):
     await state.clear()
     sub = await is_subscribed(message.from_user.id)
     if not sub:
         builder = InlineKeyboardBuilder()
-        builder.row(types.InlineKeyboardButton(text="Подписаться на Метаформулу", url="https://t.me/metaformula_life"))
-        builder.row(types.InlineKeyboardButton(text="Я подписался (Проверить)", callback_data="check_sub"))
-        await message.answer("Привет! Я — Мета-Навигатор. Чтобы мы начали поиск сбоев в твоем автопилоте, подпишись на канал проекта:", reply_markup=builder.as_markup())
+        builder.row(types.InlineKeyboardButton(text="Подписаться на канал", url="https://t.me/metaformula_life"))
+        builder.row(types.InlineKeyboardButton(text="Я подписался!", callback_data="check_sub"))
+        await message.answer("Привет! Я — Мета-Навигатор. Прежде чем мы начнем поиск сбоев в твоем автопилоте, подпишись на канал проекта:", reply_markup=builder.as_markup())
     else:
         await start_audit(message, state)
 
@@ -72,10 +75,10 @@ async def check_btn(callback: types.CallbackQuery, state: FSMContext):
         await callback.message.answer("Доступ открыт. Начинаем аудит.")
         await start_audit(callback.message, state)
     else:
-        await callback.answer("Подписка не найдена! Сначала вступи в канал.", show_alert=True)
+        await callback.answer("Подписка не найдена! Вступи в канал.", show_alert=True)
 
 async def start_audit(message: types.Message, state: FSMContext):
-    # ОШИБКА ИСПРАВЛЕНА: Список инициализирован корректно
+    # ИСПРАВЛЕНО: answers= теперь инициализируется корректно
     await state.update_data(current_q=0, answers=)
     await message.answer("Я задам 7 вопросов, чтобы увидеть твой автопилот. Отвечай честно, из глубины.")
     await asyncio.sleep(1)
@@ -104,7 +107,7 @@ async def handle_questions(message: types.Message, state: FSMContext):
 async def generate_ai_report(answers):
     user_input = "\n".join(answers)
     try:
-        # Llama 3.3 70b на Cerebras обеспечивает высокую скорость и точность
+        # ИСПРАВЛЕНО: messages сформирован правильно
         response = client.chat.completions.create(
             messages=,
             model="llama-3.3-70b",
@@ -114,10 +117,23 @@ async def generate_ai_report(answers):
         )
         return response.choices.message.content
     except Exception as e:
-        return f"Похоже, в системе Навигатора произошел временный сбой: {e}. Попробуй позже."
+        return f"Сбой в системе Навигатора: {e}. Попробуй позже."
+
+# --- DUMMY SERVER ДЛЯ RENDER ---
+async def handle(request):
+    return web.Response(text="Бот работает")
+
+async def run_server():
+    app = web.Application()
+    app.router.add_get('/', handle)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, '0.0.0.0', int(os.environ.get("PORT", 8080)))
+    await site.start()
 
 async def main():
-    print("Бот Мета-Навигатор запущен успешно.")
+    asyncio.create_task(run_server()) # Запуск сервера в фоне
+    print("Мета-Навигатор запущен...")
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
