@@ -8,23 +8,23 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from cerebras.cloud.sdk import Cerebras
 from aiohttp import web
 
-# --- КОНФИГУРАЦИЯ ---
+# --- НАСТРОЙКИ ---
 TOKEN = "8576599798:AAGzDKKbuyd46h9qZ_U57JC4R_nRbQodv2M"
 CEREBRAS_API_KEY = "csk-fmk4e6tm5e2vpkxcec3fn498jnk9nhf849hehjrpnd2jvwrn"
 CHANNEL_ID = "@metaformula_life"
 
-# Инициализация клиентов
+# Инициализация ИИ и бота
 client = Cerebras(api_key=CEREBRAS_API_KEY)
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
-# --- ЛОГИКА СОСТОЯНИЙ ---
+# --- ЛОГИКА СОСТОЯНИЙ (FSM) ---
 class AuditState(StatesGroup):
     answering_questions = State()
 
 QUESTIONS = [
-    "1. Если бы ты был на 100% автором своей жизни, что бы ты изменил прямо сейчас? (Или ты пока наблюдатель?)",
-    "2. Опиши свой 'день сурка' тремя словами. Какие мысли крутятся в голове фоном, когда ты ничем не занят? (Твой режим заставки)",
+    "1. Если бы ты был на 100% автором своей жизни, что бы ты изменил прямо сейчас? (Или ты пока просто наблюдатель?)",
+    "2. Опиши свой 'день сурка' тремя словами. Какие мысли крутятся в голове фоном, когда ты не занят делом? (Твой режим заставки)",
     "3. Какая ситуация высасывает энергию больше всего? На какой физический объект она похожа?",
     "4. Где в теле ты чувствуешь зажим или холод, когда думаешь об этом? (Или ты 'только в голове'?)",
     "5. Какое качество в людях тебя бесит или раздражает? Какая свобода в нем спрятана?",
@@ -33,11 +33,11 @@ QUESTIONS = [
 ]
 
 SYSTEM_PROMPT = """
-Ты — «Мета-Навигатор», интеллектуальный ИИ-агент Александра Лазаренко. Ты Проводник. 
+Ты — «Мета-Навигатор», ИИ-агент Александра Лазаренко. Ты Проводник. 
 ТВОЯ ЗАДАЧА: Проанализировать ответы пользователя и выдать «Аудит Автопилота».
 
 ПРИНЦИПЫ:
-1. МПТ: Возвращай авторство. Не жалей 'жертву', а подсвечивай, как человек сам создает свой тупик. 
+1. МПТ: Возвращай авторство. Если человек ноет, подсвечивай, как он сам создает этот тупик. 
 2. Нейрофизиология: Используй понятия 'застойная доминанта' и 'режим заставки'. 
 3. Тон: Простой, честный, глубокий. Говори на языке 'прошивок', 'сбоев' и 'маршрутов'. Никакой эзотерики.
 
@@ -56,11 +56,12 @@ async def is_subscribed(user_id):
     except Exception:
         return False
 
-# --- ОБРАБОТЧИКИ (HANDLERS) ---
+# --- ОБРАБОТЧИКИ ---
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message, state: FSMContext):
     await state.clear()
-    if not await is_subscribed(message.from_user.id):
+    sub = await is_subscribed(message.from_user.id)
+    if not sub:
         builder = InlineKeyboardBuilder()
         builder.row(types.InlineKeyboardButton(text="Подписаться на канал", url="https://t.me/metaformula_life"))
         builder.row(types.InlineKeyboardButton(text="Я подписался!", callback_data="check_sub"))
@@ -77,18 +78,18 @@ async def check_btn(callback: types.CallbackQuery, state: FSMContext):
         await callback.answer("Подписка не найдена! Вступи в канал.", show_alert=True)
 
 async def start_audit(message: types.Message, state: FSMContext):
-    # ТУТ ИСПРАВЛЕНА ОШИБКА: теперь список инициализируется как
-    await state.update_data(current_q=0, answers=)
+    # ИСПРАВЛЕНО: answers= теперь инициализируется корректно
+    await state.update_data(current_q=0, answers=[])
     await message.answer("Я задам 7 вопросов, чтобы увидеть твой автопилот. Отвечай честно, из глубины.")
     await asyncio.sleep(1)
-    await message.answer(QUESTIONS)
+    await message.answer(QUESTIONS[0])
     await state.set_state(AuditState.answering_questions)
 
 @dp.message(AuditState.answering_questions)
 async def handle_questions(message: types.Message, state: FSMContext):
     data = await state.get_data()
     q_idx = data.get('current_q', 0)
-    answers = data.get('answers',)
+    answers = data.get('answers', [])
     
     answers.append(f"Вопрос {q_idx+1}: {message.text}")
     new_idx = q_idx + 1
@@ -106,29 +107,31 @@ async def handle_questions(message: types.Message, state: FSMContext):
 async def generate_ai_report(answers):
     user_input = "\n".join(answers)
     try:
+        # ИСПРАВЛЕНО: messages сформирован правильно
         response = client.chat.completions.create(
-            messages=,
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": user_input}
+            ],
             model="llama-3.3-70b",
             temperature=0.4,
             top_p=0.9,
             max_completion_tokens=2048
         )
-        return response.choices.message.content
+        return response.choices[0].message.content
     except Exception as e:
         return f"Сбой в системе Навигатора: {e}. Попробуй позже."
 
-# --- ВЕБ-СЕРВЕР ДЛЯ RENDER (HEALTH CHECK) ---
-async def handle_health(request):
-    return web.Response(text="Бот Мета-Навигатор живой")
+# --- DUMMY SERVER ДЛЯ RENDER ---
+async def handle(request):
+    return web.Response(text="Бот работает")
 
 async def run_server():
     app = web.Application()
-    app.router.add_get('/', handle_health)
+    app.router.add_get('/', handle)
     runner = web.AppRunner(app)
     await runner.setup()
-    # Берем порт из переменной окружения Render или 8080 по умолчанию
-    port = int(os.environ.get("PORT", 8080))
-    site = web.TCPSite(runner, '0.0.0.0', port)
+    site = web.TCPSite(runner, '0.0.0.0', int(os.environ.get("PORT", 8080)))
     await site.start()
 
 async def main():
