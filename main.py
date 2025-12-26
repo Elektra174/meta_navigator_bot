@@ -8,13 +8,13 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from cerebras.cloud.sdk import Cerebras
 from aiohttp import web
 
-# --- КОНФИГУРАЦИЯ ---
-TOKEN = "8576599798:AAGzDKKbuyd46h9qZ_U57JC4R_nRbQodv2M"
-CEREBRAS_API_KEY = "csk-fmk4e6tm5e2vpkxcec3fn498jnk9nhf849hehjrpnd2jvwrn"
+# --- КОНФИГУРАЦИЯ (Ключи берем из переменных Render) ---
+TOKEN = os.getenv("BOT_TOKEN")
+CEREBRAS_API_KEY = os.getenv("AI_API_KEY")
 CHANNEL_ID = "@metaformula_life"
-# Прямая ссылка на ваш логотип для Telegram
 LOGO_URL = "https://raw.githubusercontent.com/Elektra174/meta_navigator_bot/main/logo.png.png"
 
+# Инициализация
 client = Cerebras(api_key=CEREBRAS_API_KEY)
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
@@ -22,39 +22,41 @@ dp = Dispatcher()
 class AuditState(StatesGroup):
     answering_questions = State()
 
+# Мягкие формулировки в стиле МПТ [1]
 QUESTIONS = [
-    "1. Если бы вы на мгновение представили, что являетесь на 100% Автором своей реальности, что бы вы изменили первым делом? (Или пока кажется, что жизнь просто «случается» с вами?)",
-    "2. Могли бы вы описать то состояние повторения, которое иногда называют «днем сурка»? Какие мысли крутятся в голове в те моменты, когда вы не заняты делом? (Это ваш «режим заставки» мозга).",
-    "3. Какая ситуация сейчас больше всего «вытягивает» из вас силы? Если бы эта проблема была физическим объектом, на что бы она была похожа?",
-    "4. Когда вы думаете об этом объекте, что вы замечаете в теле? Это может быть сжатие, холод, тяжесть или иное ощущение?",
-    "5. Какое качество в других людях вас раздражает больше всего? Попробуйте увидеть: какую силу или свободу проявляет этот человек, которую вы сейчас себе запрещаете?",
-    "6. Как вам кажется, сколько еще времени вы готовы нарезать круги по этой «петле» старого маршрута, пока ваш внутренний ресурс не иссякнет?",
-    "7. Готовы ли вы прямо сейчас попробовать перехватить управление у «Автопилота» и проложить свой собственный маршрут?"
+    "1. Если бы вы на мгновение представили, что являетесь на 100% Автором своей реальности, что бы вы изменили первым делом? (Или пока кажется, что события просто случаются с вами?)",
+    "2. Замечаете ли вы моменты, когда мысли крутятся по кругу сами по себе, когда вы ничем не заняты? Как бы вы описали этот «фоновый шум» вашего ума?",
+    "3. Какая ситуация сейчас больше всего забирает у вас силы? Если бы вы могли представить это препятствие как физический объект, на что бы оно было похоже?",
+    "4. Когда вы направляете внимание на этот образ, что вы чувствуете в теле? Это может быть сжатие, тяжесть, холод или какое-то иное ощущение?",
+    "5. Какое качество в других людях вас сейчас особенно задевает или раздражает? Если бы в этом качестве была скрыта какая-то свобода, которой вам не хватает, то какая именно?",
+    "6. Как вам кажется, сколько еще времени вы готовы двигаться по этому повторяющемуся кругу, пока внутренний ресурс не иссякнет полностью?",
+    "7. Готовы ли вы прямо сейчас попробовать перехватить управление у своего «Автопилота» и проложить путь из точки ясности?"
 ]
 
 SYSTEM_PROMPT = """
-Ты — «Мета-Навигатор», интеллектуальный ИИ-агент Александра Лазаренко. Ты Проводник. 
-ТВОЯ ЗАДАЧА: Проанализировать ответы пользователя и выдать глубокий психологический аудит.
+Ты — «Мета-Навигатор», интеллектуальный агент Александра Лазаренко. Ты Проводник. 
+ЗАДАЧА: Проанализировать ответы и выдать глубокий психологический аудит.
 
 ПРИНЦИПЫ:
-1. Используй только Markdown. Никаких двойных звездочек (** **) в тексте. Используй # и ## для заголовков.
-2. Тон: Мудрый, бережный. Если используешь термины 'Застойная доминанта' или 'Режим заставки', кратко поясни их (как заевшую пластинку или холостой ход мозга).
-3. МПТ: Возвращай авторство. Подсвети, как человек сам блокирует свою энергию.
+1. Используй ТОЛЬКО Markdown. Никаких двойных звездочек (** **) в тексте. Используй # и ## для заголовков.
+2. Тон: Бережный, мудрый. Разъясняй термины:
+   - Застойная доминанта: внутренний магнит, стягивающий вашу энергию.
+   - Режим заставки (ДСМ): когда мозг крутит мысли вхолостую.
+3. МПТ: Возвращай авторство. Подсвети, как человек сам блокирует свою силу.
 
-СТРУКТУРА ОТВЕТА:
-# Результаты Аудита
-## Индекс Автопилота: [Значение]%
-## Анализ системы: [Описание сбоя]
-## Метаформула решения: [Короткая фраза-код]
-## Слово Проводника: [Напутствие]
+СТРУКТУРА ОТЧЕТА:
+# Результаты Аудита Автопилота
+## Уровень автоматизма: [Значение]%
+## Анализ системы: [Описание сбоя и доминанты]
+## Метаформула решения: [Короткая фраза-ключ]
+## Слово Проводника: [Бережное напутствие]
 """
 
 async def is_subscribed(user_id):
     try:
         member = await bot.get_chat_member(chat_id=CHANNEL_ID, user_id=user_id)
         return member.status in ["member", "administrator", "creator"]
-    except:
-        return False
+    except: return False
 
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message, state: FSMContext):
@@ -63,7 +65,7 @@ async def cmd_start(message: types.Message, state: FSMContext):
         builder = InlineKeyboardBuilder()
         builder.row(types.InlineKeyboardButton(text="Присоединиться к проекту", url="https://t.me/metaformula_life"))
         builder.row(types.InlineKeyboardButton(text="Я в канале! Начать путь", callback_data="check_sub"))
-        await message.answer("Добро пожаловать в Метаформулу Жизни.\n\nЯ — ваш Мета-Навигатор. Помогу увидеть программы вашего Автопилота и проложить путь к себе настоящему.\n\nЧтобы начать, пожалуйста, подпишитесь на наш канал:", reply_markup=builder.as_markup())
+        await message.answer("Добро пожаловать в Метаформулу Жизни.\n\nЯ — ваш Мета-Навигатор. Помогу увидеть программы вашего Автопилота и проложить путь к себе.\n\nЧтобы начать, пожалуйста, подпишитесь на наш канал:", reply_markup=builder.as_markup())
     else:
         await start_audit(message, state)
 
@@ -73,35 +75,30 @@ async def check_btn(callback: types.CallbackQuery, state: FSMContext):
         await callback.message.answer("Доступ подтвержден.")
         await start_audit(callback.message, state)
     else:
-        await callback.answer("Вы еще не подписаны!", show_alert=True)
+        await callback.answer("Вы еще не подписаны на канал!", show_alert=True)
 
 async def start_audit(message: types.Message, state: FSMContext):
-    # ИСПРАВЛЕНО: добавлено значение []
-    await state.update_data(current_q=0, answers=[])
-    
-    # Отправляем фото-обложку
+    await state.update_data(current_q=0, answers=) # Инициализация списка ответов
     try:
         await message.answer_photo(
             photo=LOGO_URL,
-            caption="Ваш Авторский Маршрут начинается здесь.\n\nЯ задам 7 вопросов, чтобы протереть линзы вашего внутреннего навигатора. Отвечайте из глубины, доверяя первым пришедшим образам."
+            caption="Ваш Авторский Маршрут начинается с этого момента осознания.\n\n"
+                    "Большинство людей живут «на автопилоте» — в режиме экономии энергии мозга. "
+                    "Я задам 7 вопросов, чтобы помочь вам увидеть эти программы со стороны."
         )
-        await asyncio.sleep(1)
-    except Exception as e:
-        print(f"Ошибка при отправке фото: {e}")
-        await message.answer("Ваш Авторский Маршрут начинается здесь.\n\nЯ задам 7 вопросов, чтобы протереть линзы вашего внутреннего навигатора. Отвечайте из глубины, доверяя первым пришедшим образам.")
+    except:
+        await message.answer("Ваш Авторский Маршрут начинается здесь...")
     
-    # ИСПРАВЛЕНО: отправляем первый вопрос, а не весь список
-    await message.answer(QUESTIONS[0])
+    await asyncio.sleep(1)
+    await message.answer(QUESTIONS)
     await state.set_state(AuditState.answering_questions)
 
 @dp.message(AuditState.answering_questions)
 async def handle_questions(message: types.Message, state: FSMContext):
     data = await state.get_data()
     q_idx = data.get('current_q', 0)
-    # ИСПРАВЛЕНО: добавлено значение по умолчанию []
-    answers = data.get('answers', [])
+    answers = data.get('answers',)
     
-    # ИСПРАВЛЕНО: добавляем ответ
     answers.append(f"Q{q_idx+1}: {message.text}")
     new_idx = q_idx + 1
     
@@ -118,38 +115,27 @@ async def handle_questions(message: types.Message, state: FSMContext):
 async def generate_ai_report(answers):
     user_input = "\n".join(answers)
     try:
-        # ИСПРАВЛЕНО: добавлена структура messages
         response = client.chat.completions.create(
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": user_input}
-            ],
+            messages=,
             model="llama-3.3-70b",
-            temperature=0.5,
+            temperature=0.4,
             top_p=0.9,
             max_completion_tokens=2048
         )
-        # ИСПРАВЛЕНО: правильный доступ к сообщению
-        return response.choices[0].message.content
-    except Exception as e:
-        print(f"Ошибка при генерации отчета: {e}")
-        return f"Система временно недоступна: {str(e)[:100]}"
+        return response.choices.message.content
+    except Exception as e: return f"Система временно недоступна: {str(e)[:100]}"
 
-async def handle_health(request):
-    return web.Response(text="active")
+# Health Check сервер для Render
+async def handle_health(request): return web.Response(text="active")
 
 async def main():
     app = web.Application()
     app.router.add_get('/', handle_health)
     runner = web.AppRunner(app)
     await runner.setup()
-    
-    # Запускаем веб-сервер в фоне
-    site = web.TCPSite(runner, '0.0.0.0', int(os.environ.get("PORT", 8080)))
-    await site.start()
-    
-    print("Бот запущен...")
+    port = int(os.environ.get("PORT", 8080))
+    await web.TCPSite(runner, '0.0.0.0', port).start()
+    print("Мета-Навигатор запущен успешно.")
     await dp.start_polling(bot)
 
-if __name__ == "__main__":
-    asyncio.run(main())
+if __name__ == "__main__": asyncio.run(main())
