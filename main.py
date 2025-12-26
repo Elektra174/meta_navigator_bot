@@ -7,7 +7,7 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from cerebras.cloud.sdk import Cerebras
 
-# --- НАСТРОЙКИ (Ваши данные) ---
+# --- НАСТРОЙКИ ---
 TOKEN = "8576599798:AAGzDKKbuyd46h9qZ_U57JC4R_nRbQodv2M"
 CEREBRAS_API_KEY = "csk-fmk4e6tm5e2vpkxcec3fn498jnk9nhf849hehjrpnd2jvwrn"
 CHANNEL_ID = "@metaformula_life" 
@@ -17,13 +17,13 @@ client = Cerebras(api_key=CEREBRAS_API_KEY)
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
-# --- ЛОГИКА СОСТОЯНИЙ (МАРШРУТ) ---
+# --- ЛОГИКА СОСТОЯНИЙ (FSM) ---
 class AuditState(StatesGroup):
     answering_questions = State()
 
 QUESTIONS = [
     "1. Если бы ты был на 100% автором своей жизни, что бы ты изменил прямо сейчас? (Или ты пока просто наблюдатель?)",
-    "2. Опиши свой 'день сурка' тремя словами. Какие мысли крутятся в голове фоном, когда ты ничем не занят? (Твой режим заставки)",
+    "2. Опиши свой 'день сурка' тремя словами. Какие мысли крутятся в голове фоном, когда ты ничем не занят? (Это твой режим заставки)",
     "3. Какая ситуация высасывает энергию больше всего? На какой физический объект она похожа?",
     "4. Где в теле ты чувствуешь зажим или холод, когда думаешь об этом? (Или ты 'только в голове'?)",
     "5. Какое качество в людях тебя бесит или раздражает? Какая свобода в нем спрятана?",
@@ -32,18 +32,18 @@ QUESTIONS = [
 ]
 
 SYSTEM_PROMPT = """
-Ты — «Мета-Навигатор», интеллектуальный агент Александра Лазаренко. Ты Проводник. 
-ТВОЯ ЗАДАЧА: Проанализировать ответы пользователя и выдать «Аудит Автопилота».
+Ты — «Мета-Навигатор», интеллектуальный ИИ-агент Александра Лазаренко. Ты Проводник. 
+ТВОЯ ЗАДАЧА: Проанализировать ответы пользователя и составить «Аудит Автопилота».
 
-ПРИНЦИПЫ:
-1. МПТ: Возвращай авторство. Не жалей 'жертву', а подсвечивай, как человек сам создает свой тупик. Помоги увидеть 'ограничивающее самоописание'.
-2. Нейрофизиология: Используй понятия 'застойная доминанта' и 'режим заставки'. 
-3. Тон: Простой, честный, глубокий. Говори на языке 'прошивок', 'сбоев' и 'маршрутов'.
+ПРИНЦИПЫ ТВОЕЙ РАБОТЫ:
+1. МПТ: Возвращай авторство. Если пользователь жалуется на мир, подсвети, как он сам создает это состояние.[1]
+2. Нейрофизиология: Используй понятия 'застойная доминанта' и 'режим заставки'.[1] 
+3. Тон: Простой, честный, глубокий. Говори на языке 'прошивок', 'маршрутов' и 'сбоев'. Никакой эзотерики.
 
-СТРУКТУРА ТВОЕГО ОТВЕТА (ОТЧЕТА):
+СТРУКТУРА ОТЧЕТА:
 - Индекс автопилота (в %).
 - Главный 'сбой' системы (суть застревания).
-- Твоя Метаформула решения (короткая фраза-код для переключения состояния).
+- Твоя Метаформула решения (короткая фраза-код для переключения).
 - Напутствие Проводника.
 """
 
@@ -55,7 +55,7 @@ async def is_subscribed(user_id):
     except Exception:
         return False
 
-# --- ОБРАБОТЧИКИ ---
+# --- ОБРАБОТЧИКИ (HANDLERS) ---
 
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message, state: FSMContext):
@@ -84,7 +84,7 @@ async def check_btn(callback: types.CallbackQuery, state: FSMContext):
         await callback.answer("Подписка не найдена! Сначала вступи в канал.", show_alert=True)
 
 async def start_audit(message: types.Message, state: FSMContext):
-    # ОШИБКА ИСПРАВЛЕНА: answers= теперь корректно инициализирует список
+    # ОШИБКА ИСПРАВЛЕНА: answers= корректно инициализирует список
     await state.update_data(current_q=0, answers=)
     await message.answer("Я задам 7 вопросов, чтобы увидеть твой автопилот. Отвечай честно, из глубины.")
     await asyncio.sleep(1)
@@ -97,7 +97,7 @@ async def handle_questions(message: types.Message, state: FSMContext):
     q_idx = data.get('current_q', 0)
     answers = data.get('answers',)
     
-    # Сохраняем ответ
+    # Добавляем ответ пользователя
     answers.append(f"Вопрос {q_idx+1}: {message.text}")
     new_idx = q_idx + 1
     
@@ -114,7 +114,7 @@ async def handle_questions(message: types.Message, state: FSMContext):
 async def generate_ai_report(answers):
     user_input = "\n".join(answers)
     try:
-        # Запрос к Cerebras (Llama-3.3-70b)
+        # Корректный запрос к Cerebras Llama-3.3-70b
         response = client.chat.completions.create(
             messages=,
             model="llama-3.3-70b",
@@ -124,10 +124,10 @@ async def generate_ai_report(answers):
         )
         return response.choices.message.content
     except Exception as e:
-        return f"Похоже, в системе Навигатора произошел сбой: {e}. Попробуй позже."
+        return f"Похоже, в системе Навигатора произошел временный сбой: {e}. Попробуй позже."
 
 async def main():
-    print("Мета-Навигатор запущен...")
+    print("Мета-Навигатор запущен и готов к работе...")
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
