@@ -13,12 +13,11 @@ TOKEN = os.getenv("BOT_TOKEN")
 CEREBRAS_API_KEY = os.getenv("AI_API_KEY")
 CHANNEL_ID = "@metaformula_life"
 
-# Прямые ссылки на изображения из GitHub
-LOGO_START_URL = "https://raw.githubusercontent.com/Elektra174/meta_navigator_bot/main/logo11.png"
+# Прямые ссылки на изображения
+LOGO_START_URL = "https://raw.githubusercontent.com/Elektra174/meta_navigator_bot/main/logo1.png"
 LOGO_AUDIT_URL = "https://raw.githubusercontent.com/Elektra174/meta_navigator_bot/main/logo.png.png"
 GUIDE_URL = "https://raw.githubusercontent.com/Elektra174/meta_navigator_bot/main/revizia_guide.pdf"
 
-# Инициализация
 client = Cerebras(api_key=CEREBRAS_API_KEY)
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
@@ -26,36 +25,51 @@ dp = Dispatcher()
 class AuditState(StatesGroup):
     answering_questions = State()
 
+# Мягкие формулировки в стиле МПТ 
 QUESTIONS = [
     "1. Если бы Вы на мгновение представили, что являетесь на 100% Автором своей реальности, что бы Вы изменили первым делом?",
-    "2. Замечаете ли Вы моменты, когда мысли крутятся по кругу сами по себе? Как бы Вы описали этот «фоновый шум» Вашего ума? (Ваш «режим заставки» мозга).",
+    "2. Замечаете ли Вы моменты, когда мысли крутятся по кругу сами по себе, когда Вы ничем не заняты? Как бы Вы описали этот «фоновый шум» Вашего ума?",
     "3. Какая ситуация сейчас больше всего «вытягивает» из Вас силы? Если бы у Вас был образ или метафора этой ситуации — на что бы они могли быть похожи?",
     "4. Когда Вы направляете внимание на этот образ, что Вы замечаете в теле? (Сжатие, тяжесть, холод или иное ощущение?)",
-    "5. Какое качество в других людях Вас раздражает больше всего? Какую силу или свободу проявляет этот человек, которую Вы сейчас себе запрещаете?",
-    "6. Как Вам кажется, сколько еще времени Вы готовы двигаться по этому повторяющемуся кругу (этой «петле»), пока внутренний ресурс не иссякнет?",
+    "5. Какое качество в других людях Вас раздражает больше всего? Какую силу или свободу проявляет этот человек, которую Вы себе сейчас запрещаете?",
+    "6. Как Вам кажется, сколько еще времени Вы готовы двигаться по этому повторяющемуся кругу (этой «петле»), пока внутренний ресурс не иссякнет полностью?",
     "7. Готовы ли Вы прямо сейчас попробовать перехватить управление у своего «Автопилота» и проложить путь из состояния ясности?"
 ]
 
 SYSTEM_PROMPT = """
-Ты — «Мета-Навигатор», интеллектуальный ИИ-агент Александра Лазаренко. Ты Проводник. 
-ЗАДАЧА: Проанализировать ответы пользователя и выдать глубокий психологический аудит.
+Ты — «Мета-Навигатор», интеллектуальный агент Александра Лазаренко. Ты Проводник. 
+ЗАДАЧА: Проанализировать ответы и выдать глубокий отчет «Аудит Автопилота».
 
 ПРИНЦИПЫ СТИЛЯ:
-1. Обращение строго на «Вы». Только РУССКИЙ язык.
-2. Используй Markdown для заголовков (# и ##). НИКАКИХ двойных звездочек (** **) в тексте ответа.
-3. Тон: Бережный, мудрый. Не пиши про пользователя в третьем лице.
-4. Разъясняй термины:
-   - Застойная доминанта: внутренний магнит, стягивающий Вашу энергию.
+1. Обращение строго на «Вы». Только русский язык. Без слов 'возможно', 'наверное'.
+2. Используй Markdown для заголовков (# и ##). НИКАКИХ двойных звездочек (** **) в тексте.
+3. Разъясняй термины:
+   - Застойная доминанта: как внутренний магнит, который стягивает Вашу энергию.
    - Дефолт-система мозга (ДСМ): режим «заставки», когда мозг пережевывает старые сценарии вхолостую.
-5. МПТ: Возвращай авторство. Подсвети, как человек сам блокирует свою силу.
-6. Давай намеки на конкретные шаги в скобках.
+4. МПТ: Возвращай авторство. Подсвети, как человек сам блокирует свою силу.
+5. Давай намеки на конкретные шаги в скобках (например: начать замечать моменты 'жвачки' или делать микродвижения из нового состояния).
+
+СТРУКТУРА ОТВЕТА (ОБЯЗАТЕЛЬНО В НАЧАЛЕ):
+# Результаты Аудита Автопилота
+## Индекс Автоматизма: [Вычисленное значение]%
+
+## Застойная доминанта
+[Анализ образа из Вопроса №3 и ощущений из №4]
+
+## Дефолт-система мозга (ДСМ)
+[Анализ руминации из Вопроса №2]
+
+## Ваше состояние Автора
+[Анализ Вопроса №5 и №7. Намек на шаги в скобках]
+
+## Ваша Метаформула: [Короткая фраза-код]
 """
 
 async def is_subscribed(user_id):
     try:
         member = await bot.get_chat_member(chat_id=CHANNEL_ID, user_id=user_id)
         return member.status in ["member", "administrator", "creator"]
-    except:
+    except: 
         return False
 
 @dp.message(Command("start"))
@@ -66,18 +80,15 @@ async def cmd_start(message: types.Message, state: FSMContext):
         builder.row(types.InlineKeyboardButton(text="Присоединиться к проекту", url="https://t.me/metaformula_life"))
         builder.row(types.InlineKeyboardButton(text="Я в канале! Начать путь", callback_data="check_sub"))
         
-        # ДОБАВЛЕНА КАРТИНКА ПРИВЕТСТВИЯ (logo1.png)
         try:
             await message.answer_photo(
                 photo=LOGO_START_URL,
                 caption="Добро пожаловать в «Метаформулу Жизни».\n\n"
-                        "Меня зовут Александр Лазаренко. Я — автор и проводник проекта. "
-                        "Я помогу Вам увидеть программы Вашего Автопилота и проложить маршрут к себе настоящему.\n\n"
+                        "Меня зовут Александр Лазаренко. Я помогу Вам увидеть программы Вашего Автопилота и проложить маршрут к себе настоящему.\n\n"
                         "Чтобы начать, пожалуйста, подпишитесь на наш канал:",
                 reply_markup=builder.as_markup()
             )
-        except Exception as e:
-            print(f"Ошибка при отправке стартового фото: {e}")
+        except:
             await message.answer("Добро пожаловать в «Метаформулу Жизни»...", reply_markup=builder.as_markup())
     else:
         await start_audit(message, state)
@@ -88,26 +99,21 @@ async def check_btn(callback: types.CallbackQuery, state: FSMContext):
         await callback.message.answer("Доступ подтвержден.")
         await start_audit(callback.message, state)
     else:
-        await callback.answer("Вы еще не подписаны на канал!", show_alert=True)
+        await callback.answer("Вы еще не подписаны!", show_alert=True)
 
 async def start_audit(message: types.Message, state: FSMContext):
-    # ИСПРАВЛЕНО: добавлено значение []
     await state.update_data(current_q=0, answers=[])
-    
     try:
         await message.answer_photo(
             photo=LOGO_AUDIT_URL,
             caption="Ваш Авторский Маршрут начинается сейчас.\n\n"
-                    "Большинство людей живут «на автопилоте» — в режиме экономии энергии мозга. "
-                    "Я задам 7 вопросов, чтобы помочь Вам увидеть эти программы со стороны.\n\n"
+                    "Я задам 7 вопросов, чтобы помочь Вам увидеть программы Автопилота со стороны.\n\n"
                     "Отвечайте искренне, доверяя первому отклику."
         )
-    except Exception as e:
-        print(f"Ошибка при отправке фото аудита: {e}")
-        await message.answer("Начинаем Ваш Авторский Маршрут...")
+    except:
+        await message.answer("Ваш Авторский Маршрут начинается сейчас...")
     
     await asyncio.sleep(1)
-    # ИСПРАВЛЕНО: отправляем ПЕРВЫЙ вопрос
     await message.answer(QUESTIONS[0])
     await state.set_state(AuditState.answering_questions)
 
@@ -115,7 +121,6 @@ async def start_audit(message: types.Message, state: FSMContext):
 async def handle_questions(message: types.Message, state: FSMContext):
     data = await state.get_data()
     q_idx = data.get('current_q', 0)
-    # ИСПРАВЛЕНО: добавлено значение по умолчанию []
     answers = data.get('answers', [])
     
     answers.append(f"Вопрос №{q_idx+1}: {message.text}")
@@ -136,15 +141,13 @@ async def handle_questions(message: types.Message, state: FSMContext):
                         "Но знание формулы — это лишь код доступа. Чтобы она реально «прописалась» в Вашем мозге, изучите гайд «Ревизия маршрута».\n\n"
                         "Будьте на связи в канале!"
             )
-        except Exception as e:
-            print(f"Ошибка при отправке гайда: {e}")
-            await message.answer("Вы получили Вашу Метаформулу. Гайд доступен в закрепе канала!")
+        except:
+            await message.answer("Ваша Метаформула получена. Гайд доступен в закрепе канала!")
         await state.clear()
 
 async def generate_ai_report(answers):
     user_input = "\n".join(answers)
     try:
-        # ИСПРАВЛЕНО: добавлена структура messages
         response = client.chat.completions.create(
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
@@ -155,13 +158,11 @@ async def generate_ai_report(answers):
             top_p=0.9,
             max_completion_tokens=2048
         )
-        # ИСПРАВЛЕНО: правильный доступ к результату
         return response.choices[0].message.content
-    except Exception as e:
-        print(f"Ошибка при генерации отчета: {e}")
+    except Exception as e: 
         return f"Система временно недоступна: {str(e)[:100]}"
 
-async def handle_health(request):
+async def handle_health(request): 
     return web.Response(text="active")
 
 async def main():
@@ -169,12 +170,9 @@ async def main():
     app.router.add_get('/', handle_health)
     runner = web.AppRunner(app)
     await runner.setup()
-    port = int(os.environ.get("PORT", 8080))
-    site = web.TCPSite(runner, '0.0.0.0', port)
-    await site.start()
-    print("Мета-Навигатор запущен успешно.")
+    await web.TCPSite(runner, '0.0.0.0', int(os.environ.get("PORT", 8080))).start()
+    print("Бот запущен успешно.")
     await dp.start_polling(bot)
 
-if __name__ == "__main__":
+if __name__ == "__main__": 
     asyncio.run(main())
-
