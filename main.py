@@ -6,7 +6,7 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from cerebras.cloud.sdk import Cerebras
+from cerebras.cloud.sdk import AsyncCerebras  # ИЗМЕНЕНО: Используем асинхронного клиента
 from aiohttp import web
 
 # --- КОНФИГУРАЦИЯ (Ключи берем из переменных Render) ---
@@ -17,11 +17,11 @@ ADMIN_ID = 7830322013
 
 # Прямые ссылки на изображения
 LOGO_START_URL = "https://raw.githubusercontent.com/Elektra174/meta_navigator_bot/main/logo11.png"
-LOGO_AUDIT_URL = "https://raw.githubusercontent.com/Elektra174/meta_navigator_bot/main/logo.png.png"  # Проверьте расширение - должно быть .png
+LOGO_AUDIT_URL = "https://raw.githubusercontent.com/Elektra174/meta_navigator_bot/main/logo.png.png"  # ПРОВЕРЬТЕ: двойное расширение .png.png
 GUIDE_URL = "https://raw.githubusercontent.com/Elektra174/meta_navigator_bot/main/revizia_guide.pdf"
 
-# Инициализируем клиент Cerebras
-client = Cerebras(api_key=CEREBRAS_API_KEY)
+# Инициализируем асинхронный клиент Cerebras
+client = AsyncCerebras(api_key=CEREBRAS_API_KEY)  # ИЗМЕНЕНО: AsyncCerebras вместо Cerebras
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
@@ -170,8 +170,7 @@ async def handle_questions(message: types.Message, state: FSMContext):
                 document=GUIDE_URL,
                 caption="Вы получили Вашу Метаформулу. Активация — в Ваших руках.\n\n"
                         "Но знание формулы — это лишь ключ. Чтобы он реально повернулся в замке и Ваша машина жизни выехала из гаража «автопилота», изучите гайд «Ревизия маршрута».\n\n"
-                        "Это Ваш первый шаг к реальным переменам."
-                        "Будьте на связи в канале!"
+                        "Это Ваш первый шаг к реальным переменам. Будьте на связи в канале!"
             )
         except:
             await message.answer("Ваша Метаформула получена. Активация — в Ваших руках. Гайд по активации ждет Вас в закрепе канала!")
@@ -180,8 +179,8 @@ async def handle_questions(message: types.Message, state: FSMContext):
 async def generate_ai_report(answers):
     user_input = "\n".join(answers)
     try:
-        # Согласно документации Cerebras SDK
-        response = client.chat.completions.create(
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ 1: Добавляем await к вызову API
+        response = await client.chat.completions.create(  # ИЗМЕНЕНО: добавили await
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": user_input}
@@ -192,16 +191,22 @@ async def generate_ai_report(answers):
             max_completion_tokens=2048
         )
         
-        # ВОЗМОЖНЫЕ ВАРИАНТЫ (проверьте документацию Cerebras):
-        # Вариант 1 (наиболее вероятный для современных LLM API):
+        # Доступ к ответу - используйте этот вариант
         return response.choices[0].message.content
-        
-        # Вариант 2 (если не работает):
-        # return response.choices[0].text
         
     except Exception as e: 
         print(f"Ошибка Cerebras API: {e}")
-        return f"Система временно недоступна. Пожалуйста, попробуйте позже. Ошибка: {str(e)[:100]}"
+        # Улучшенное сообщение об ошибке
+        return f"""🚧 Система временно недоступна 
+
+Наш AI-навигатор сейчас перегружен или находится на техническом обслуживании. 
+
+Что вы можете сделать:
+1. Попробуйте через 5-10 минут
+2. Проверьте соединение с интернетом
+3. Обратитесь в поддержку @metaformula_life
+
+Техническая информация: {str(e)[:150]}"""
 
 async def handle_health(request): 
     return web.Response(text="active")
@@ -217,6 +222,7 @@ async def main():
     
     print("✅ Мета-Навигатор запущен успешно.")
     print(f"🤖 Bot: @{(await bot.get_me()).username}")
+    print(f"🔑 Cerebras API: {'Настроен' if CEREBRAS_API_KEY else 'НЕТ КЛЮЧА!'}")
     print(f"🌐 Health check: http://0.0.0.0:{os.environ.get('PORT', 8080)}/")
     
     await dp.start_polling(bot)
