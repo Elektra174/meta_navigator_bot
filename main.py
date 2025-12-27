@@ -14,7 +14,7 @@ CEREBRAS_API_KEY = os.getenv("AI_API_KEY")
 CHANNEL_ID = "@metaformula_life"
 
 # Прямые ссылки на изображения
-LOGO_START_URL = "https://raw.githubusercontent.com/Elektra174/meta_navigator_bot/main/logo1.png"
+LOGO_START_URL = "https://raw.githubusercontent.com/Elektra174/meta_navigator_bot/main/logo11.png"
 LOGO_AUDIT_URL = "https://raw.githubusercontent.com/Elektra174/meta_navigator_bot/main/logo.png.png"
 GUIDE_URL = "https://raw.githubusercontent.com/Elektra174/meta_navigator_bot/main/revizia_guide.pdf"
 
@@ -176,3 +176,4 @@ async def main():
 
 if __name__ == "__main__": 
     asyncio.run(main())
+
