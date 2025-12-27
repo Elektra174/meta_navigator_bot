@@ -26,7 +26,7 @@ client = AsyncCerebras(api_key=CEREBRAS_API_KEY)
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
-# Счетчики для мониторинга
+# Счетчики для мониторинга - инициализация
 error_counter = 0
 last_error_time = None
 api_failures = 0
@@ -85,6 +85,8 @@ SYSTEM_PROMPT = """
 
 async def send_admin_alert(alert_type: str, details: str, traceback_info: str = ""):
     """Отправка оповещения администратору о проблемах"""
+    global error_counter, api_failures  # Объявляем глобальные переменные
+    
     try:
         timestamp = datetime.now().strftime("%d.%m.%Y %H:%M:%S")
         
@@ -105,7 +107,6 @@ async def send_admin_alert(alert_type: str, details: str, traceback_info: str = 
             message += f"\n🔧 *Traceback:*\n```\n{traceback_info[:1500]}\n```"
         
         # Добавляем счетчики ошибок
-        global error_counter, api_failures
         message += f"\n📈 *Статистика:*\n• Всего ошибок за сессию: {error_counter}\n• Сбоев API: {api_failures}"
         
         await bot.send_message(chat_id=ADMIN_ID, text=message, parse_mode="Markdown")
@@ -155,6 +156,8 @@ async def send_report_to_admin(user_info: types.User, answers: list, report: str
 
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message, state: FSMContext):
+    global error_counter  # Объявляем глобальную переменную
+    
     try:
         await state.clear()
         if not await is_subscribed(message.from_user.id):
@@ -174,7 +177,6 @@ async def cmd_start(message: types.Message, state: FSMContext):
         else:
             await start_audit(message, state)
     except Exception as e:
-        global error_counter
         error_counter += 1
         await send_admin_alert(
             "bot_crash",
@@ -185,6 +187,8 @@ async def cmd_start(message: types.Message, state: FSMContext):
 
 @dp.callback_query(F.data == "check_sub")
 async def check_btn(callback: types.CallbackQuery, state: FSMContext):
+    global error_counter  # Объявляем глобальную переменную
+    
     try:
         if await is_subscribed(callback.from_user.id):
             await callback.message.answer("Доступ подтвержден.")
@@ -192,7 +196,6 @@ async def check_btn(callback: types.CallbackQuery, state: FSMContext):
         else:
             await callback.answer("Вы еще не подписаны!", show_alert=True)
     except Exception as e:
-        global error_counter
         error_counter += 1
         await send_admin_alert(
             "bot_crash",
@@ -216,7 +219,7 @@ async def start_audit(message: types.Message, state: FSMContext):
         await message.answer(QUESTIONS[0])
         await state.set_state(AuditState.answering_questions)
     except Exception as e:
-        global error_counter
+        global error_counter  # Объявляем глобальную переменную
         error_counter += 1
         await send_admin_alert(
             "bot_crash",
@@ -226,6 +229,8 @@ async def start_audit(message: types.Message, state: FSMContext):
 
 @dp.message(AuditState.answering_questions)
 async def handle_questions(message: types.Message, state: FSMContext):
+    global error_counter  # Объявляем глобальную переменную
+    
     try:
         data = await state.get_data()
         q_idx = data.get('current_q', 0)
@@ -257,7 +262,6 @@ async def handle_questions(message: types.Message, state: FSMContext):
                 await message.answer("Ваша Метаформула получена. Активация — в Ваших руках. Гайд по активации ждет Вас в закрепе канала!")
             await state.clear()
     except Exception as e:
-        global error_counter
         error_counter += 1
         await send_admin_alert(
             "bot_crash",
@@ -267,6 +271,8 @@ async def handle_questions(message: types.Message, state: FSMContext):
         await message.answer("⚠️ Произошла ошибка при обработке ваших ответов. Попробуйте начать заново с команды /start")
 
 async def generate_ai_report(answers):
+    global error_counter, api_failures, last_error_time  # Объявляем глобальные переменные
+    
     user_input = "\n".join(answers)
     try:
         response = await client.chat.completions.create(
@@ -281,13 +287,11 @@ async def generate_ai_report(answers):
         )
         
         # Сбрасываем счетчик ошибок API при успешном запросе
-        global api_failures
         api_failures = 0
         
         return response.choices[0].message.content
         
     except Exception as e: 
-        global error_counter, api_failures, last_error_time
         error_counter += 1
         api_failures += 1
         last_error_time = datetime.now()
