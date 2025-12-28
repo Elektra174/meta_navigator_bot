@@ -18,7 +18,7 @@ ADMIN_ID = 7830322013
 
 # Прямые ссылки на изображения
 LOGO_START_URL = "https://raw.githubusercontent.com/Elektra174/meta_navigator_bot/main/logo11.png"
-LOGO_AUDIT_URL = "https://raw.githubusercontent.com/Elektra174/meta_navigator_bot/main/logo.png.png"
+LOGO_AUDIT_URL = "https://raw.githubusercontent.com/Elektra174/meta_navigator_bot/main/logo.png"
 GUIDE_URL = "https://raw.githubusercontent.com/Elektra174/meta_navigator_bot/main/guide.pdf"
 
 # Инициализируем асинхронный клиент Cerebras
@@ -412,3 +412,4 @@ async def main():
 
 if __name__ == "__main__": 
     asyncio.run(main())
+
