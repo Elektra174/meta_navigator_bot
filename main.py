@@ -22,7 +22,7 @@ CHANNEL_ID = "@metaformula_life"
 ADMIN_ID = 7830322013
 
 # Ресурсы проекта
-LOGO_FORMULA_URL = "https://raw.githubusercontent.com/Elektra174/meta_navigator_bot/main/logo.png.png"
+LOGO_FORMULA_URL = "https://raw.githubusercontent.com/Elektra174/meta_navigator_bot/main/logo.png"
 LOGO_NAVIGATOR_URL = "https://raw.githubusercontent.com/Elektra174/meta_navigator_bot/main/logo11.png"
 GUIDE_URL = "https://raw.githubusercontent.com/Elektra174/meta_navigator_bot-TEST/main/avtopilot.pdf"
 GUIDE_FILENAME = "Дешифровка_Автопилота.pdf"
@@ -1090,3 +1090,4 @@ if __name__ == "__main__":
     except Exception as e:
         logger.critical(f"Критическая ошибка при запуске: {e}")
         exit(1)
+
