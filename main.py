@@ -12,6 +12,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 from aiohttp import web, ClientSession
 
 # Для Render.com: отключаем обработку сигналов, которые вызывают проблемы
@@ -1086,9 +1087,9 @@ def очистить_отчет_для_телеграма(отчет: str) -> st
         return отчет
 
 # --- ВЕБ-СЕРВЕР ---
-async def обработчик_здоровья(запрос):
-    время_работы = datetime.now() - время_старта
-    return web.Response(text=f"Мета-Навигатор v2.2 | Время работы: {str(время_работы).split('.')[0]} | Ошибок: {счетчик_ошибок} | Сбоев API: {сбои_api}")
+async def обработчик_здоровья(request):
+    """Простая проверка здоровья"""
+    return web.Response(text=f"Meta-Navigator v2.2 Alive")
 
 async def отправить_уведомление_о_запуске():
     try:
@@ -1100,157 +1101,94 @@ async def отправить_уведомление_о_запуске():
             f"🧠 Режим: Старший Архитектор Идентичности\n"
             f"🔑 Cerebras API: {'✅' if клиент else '❌ ДЕМО-РЕЖИМ'}\n"
             f"📊 Портал: {os.environ.get('PORT', 8080)}\n"
-            f"📎 Доставка протокола: АКТИВНА (с ловушкой интеллекта)\n"
-            f"🎯 Сдвиг к МК: 30 сек задержка\n"
-            f"⚡️ Отчет: Монолитный код с ложным сигналом"
+            f"📎 Доставка протокола: АКТИВНА\n"
+            f"🎯 Сдвиг к МК: 30 сек задержка"
         )
         await бот.send_message(chat_id=ИД_АДМИНА, text=сообщение)
     except Exception as e:
         логгер.error(f"Не удалось отправить уведомление о запуске: {e}")
 
-async def настройка_вебхука():
-    """Настройка вебхука для Render.com"""
-    try:
-        базовый_url = os.environ.get('RENDER_EXTERNAL_URL')
-        if базовый_url:
-            url_вебхука = f"{базовый_url}/webhook"
-            
-            # Удаляем старый вебхук
-            await бот.delete_webhook(drop_pending_updates=True)
-            
-            # Устанавливаем новый вебхук
-            await бот.set_webhook(
-                url=url_вебхука,
-                drop_pending_updates=True,
-                allowed_updates=диспетчер.resolve_used_update_types()
-            )
-            
-            логгер.info(f"Вебхук установлен: {url_вебхука}")
-            return True
-        return False
-    except Exception as e:
-        логгер.error(f"Ошибка настройки вебхука: {e}")
-        return False
+async def on_startup(bot: Bot, base_url: str):
+    """Установка вебхука при старте"""
+    webhook_url = f"{base_url}/webhook"
+    логгер.info(f"Ставлю вебхук: {webhook_url}")
+    await bot.set_webhook(webhook_url, drop_pending_updates=True)
 
-async def вебсервер_для_render():
-    """Запускает веб-сервер для Render.com"""
-    приложение = web.Application()
-    приложение.router.add_get('/', обработчик_здоровья)
-    приложение.router.add_get('/health', обработчик_здоровья)
-    
-    # Настраиваем вебхук если есть RENDER_EXTERNAL_URL
-    if os.environ.get('RENDER_EXTERNAL_URL'):
-        # Правильный обработчик вебхука для aiogram 3.x
-        async def handle_webhook(request):
-            try:
-                data = await request.json()
-                update = types.Update(**data)
-                await диспетчер.feed_update(бот, update)
-                return web.Response()
-            except Exception as e:
-                логгер.error(f"Ошибка обработки вебхука: {e}")
-                return web.Response(status=500)
-        
-        приложение.router.add_post('/webhook', handle_webhook)
-    
-    return приложение
-
-async def запустить_вебсервер():
-    """Запуск веб-сервера для Render.com"""
-    приложение = await вебсервер_для_render()
-    порт = int(os.environ.get("PORT", 8080))
-    
-    runner = web.AppRunner(приложение)
-    await runner.setup()
-    site = web.TCPSite(runner, '0.0.0.0', порт)
-    await site.start()
-    
-    логгер.info(f"🌐 Веб-сервер запущен на порту {порт}")
-    
-    # Запускаем вебхук если нужно
-    if os.environ.get('RENDER_EXTERNAL_URL'):
-        await настройка_вебхука()
-        логгер.info("✅ Режим: Вебхук (Render.com)")
-    else:
-        логгер.info("✅ Режим: Polling (локальная разработка)")
-    
-    return runner
-
-async def запустить_бота():
-    """Запускает бота в зависимости от режима"""
-    if not os.environ.get('RENDER_EXTERNAL_URL'):
-        # Режим polling для локальной разработки
-        await бот.delete_webhook(drop_pending_updates=True)
-        await диспетчер.start_polling(бот, skip_updates=True)
-
-async def главная():
+async def main():
     if not ТОКЕН_БОТА:
         логгер.error("❌ ОШИБКА: BOT_TOKEN не установлен!")
         raise ValueError("BOT_TOKEN не установлен")
     
-    if not КЛЮЧ_API or not клиент:
-        логгер.warning("⚠️ AI_API_KEY не установен или Cerebras недоступен! Будет использоваться демо-режим.")
-    
-    # Запускаем уведомление о запуске
+    # Отправляем уведомление
     try:
         await отправить_уведомление_о_запуске()
-    except Exception as e:
-        логгер.error(f"Не удалось отправить уведомление о запуске: {e}")
-    
-    # Запускаем веб-сервер
-    runner = await запустить_вебсервер()
-    
-    логгер.info(f"✅ Мета-Навигатор v2.2 запущен")
-    логгер.info(f"🤖 Бот: @{(await бот.get_me()).username}")
-    логгер.info(f"🧠 Режим: Старший Архитектор Идентичности")
-    логгер.info(f"🔑 Cerebras API: {'✅' if клиент else '❌ ДЕМО-РЕЖИМ'}")
-    логгер.info(f"📎 Доставка протокола: АКТИВНА (с ловушкой интеллекта)")
-    логгер.info(f"🎯 Сдвиг к МК: 30 сек задержка")
-    логгер.info(f"⚡️ Отчет: Монолитный код с ложным сигналом")
-    логгер.info(f"🌐 Проверка: http://0.0.0.0:{os.environ.get('PORT', 8080)}/")
-    логгер.info(f"📝 Технический опросник: {len(ВОПРОСЫ)} вопросов")
-    
-    # Если не используем вебхук, запускаем polling
-    if not os.environ.get('RENDER_EXTERNAL_URL'):
+    except Exception:
+        pass
+
+    # Проверка режима (Webhook vs Polling)
+    WEBHOOK_URL = os.environ.get("RENDER_EXTERNAL_URL")
+    PORT = int(os.environ.get("PORT", 8080))
+
+    if WEBHOOK_URL:
+        # --- РЕЖИМ WEBHOOK (RENDER) ---
+        логгер.info("🚀 ЗАПУСК В РЕЖИМЕ WEBHOOK (Render.com)")
+        
+        app = web.Application()
+        
+        # Маршруты для проверки здоровья
+        app.router.add_get("/", обработчик_здоровья)
+        app.router.add_get("/health", обработчик_здоровья)
+
+        # === ИСПРАВЛЕНИЕ: ИСПОЛЬЗУЕМ SimpleRequestHandler ===
+        webhook_requests_handler = SimpleRequestHandler(
+            dispatcher=диспетчер,
+            bot=бот,
+        )
+        # Регистрируем путь /webhook
+        webhook_requests_handler.register(app, path="/webhook")
+
+        # Настройка приложения aiogram
+        setup_application(app, диспетчер, bot=бот)
+        
+        # Запуск сервера
+        runner = web.AppRunner(app)
+        await runner.setup()
+        site = web.TCPSite(runner, "0.0.0.0", PORT)
+        await site.start()
+        
+        логгер.info(f"🌐 Веб-сервер запущен на порту {PORT}")
+        
+        # Установка вебхука
+        await on_startup(бот, WEBHOOK_URL)
+        
+        # Бесконечный цикл
         try:
-            await запустить_бота()
-        except Exception as e:
-            логгер.critical(f"Бот остановлен: {e}")
-            await отправить_алерт_админу("краш_бота", f"Бот остановлен: {str(e)}", traceback.format_exc())
-            raise
-    else:
-        # В режиме вебхука просто держим сервер активным
-        логгер.info("🌐 Сервер вебхука запущен, ожидаем запросы от Telegram...")
-        try:
-            # Бесконечный цикл для поддержания работы сервера
             while True:
-                await asyncio.sleep(3600)  # Спим 1 час
+                await asyncio.sleep(3600)
         except (KeyboardInterrupt, SystemExit):
-            логгер.info("Бот остановлен пользователем")
-        except Exception as e:
-            логгер.critical(f"Сервер остановлен: {e}")
-            await отправить_алерт_админу("краш_сервера", f"Сервер остановлен: {str(e)}", traceback.format_exc())
-            raise
+            pass
         finally:
             await runner.cleanup()
+            
+    else:
+        # --- РЕЖИМ POLLING (ЛОКАЛЬНО) ---
+        логгер.info("🐌 ЗАПУСК В РЕЖИМЕ POLLING (Локально)")
+        await бот.delete_webhook(drop_pending_updates=True)
+        await диспетчер.start_polling(бот)
 
 if __name__ == "__main__":
     try:
-        # Для Render.com: используем asyncio.run с обработкой ошибок
         if sys.platform == 'win32':
-            asyncio.run(главная())
+            asyncio.run(main())
         else:
-            # На Linux/Unix используем uvloop если доступен
             try:
                 import uvloop
-                uvloop.run(главная())
+                uvloop.run(main())
             except ImportError:
-                asyncio.run(главная())
+                asyncio.run(main())
     except KeyboardInterrupt:
         логгер.info("Бот остановлен пользователем")
         sys.exit(0)
-    except SystemExit:
-        sys.exit(0)
     except Exception as e:
-        логгер.critical(f"Критическая ошибка при запуске: {e}")
+        логгер.critical(f"Критическая ошибка: {e}")
         sys.exit(1)
