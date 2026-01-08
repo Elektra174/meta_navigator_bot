@@ -1,9 +1,9 @@
 services:
   - type: web
     name: meta-navigator-bot
-    env: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: python render_start.py
+    env: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
     envVars:
       - key: BOT_TOKEN
         sync: false
@@ -11,3 +11,4 @@ services:
         sync: false
       - key: PORT
         value: 8080
+    healthCheckPath: /health
