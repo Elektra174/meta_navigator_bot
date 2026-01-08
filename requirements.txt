@@ -2,3 +2,5 @@ aiogram>=3.0.0
 cerebras-cloud-sdk
 python-dotenv
 aiohttp
+uvloop
+
