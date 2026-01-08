@@ -1212,3 +1212,4 @@ if __name__ == "__main__":
         asyncio.run(главная())
     except KeyboardInterrupt:
         логгер.info("Бот остановлен пользователем")
+
