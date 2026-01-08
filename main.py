@@ -43,7 +43,7 @@ except ImportError:
 # Ресурсы проекта
 ССЫЛКА_ЛОГО_ФОРМУЛА = "https://raw.githubusercontent.com/Elektra174/meta_navigator_bot/main/logo.png"
 ССЫЛКА_ЛОГО_НАВИГАТОР = "https://raw.githubusercontent.com/Elektra174/meta_navigator_bot/main/logo11.png"
-ССЫЛКА_ПРОТОКОЛА = "https://raw.githubusercontent.com/Elektra174/meta_navigator_bot-TEST/main/avtopilot.pdf"
+ССЫЛКА_ПРОТОКОЛА = "https://raw.githubusercontent.com/Elektra174/meta_navigator_bot-TEST/main/Autopilot_System_Protocol.pdf"
 ИМЯ_ФАЙЛА_ПРОТОКОЛА = "ДЕШИФРОВКА_АВТОПИЛОТА.pdf"
 ССЫЛКА_МАСТЕРКЛАССА = "https://youtube.com/playlist?list=PLyour_playlist_id"
 ССЫЛКА_КАНАЛА = "https://t.me/metaformula_life"
@@ -1192,3 +1192,4 @@ if __name__ == "__main__":
     except Exception as e:
         логгер.critical(f"Критическая ошибка: {e}")
         sys.exit(1)
+
