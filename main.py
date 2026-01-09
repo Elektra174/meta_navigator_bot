@@ -20,7 +20,6 @@ from aiohttp import web, ClientSession
 # 1. СИСТЕМНЫЕ НАСТРОЙКИ И БЕЗОПАСНОСТЬ
 # =================================================================================================
 
-# Корректная работа с сигналами на Linux/Render
 if sys.platform != 'win32':
     signal.signal(signal.SIGALRM, signal.SIG_IGN)
     signal.signal(signal.SIGCHLD, signal.SIG_IGN)
@@ -41,11 +40,11 @@ PORT = int(os.getenv("PORT", 10000))
 WEBHOOK_PATH = f"/webhook/{TOKEN}"
 WEBHOOK_URL = f"{RENDER_URL}{WEBHOOK_PATH}"
 
-# ID Администратора и Канала
+# Основные ID
 CHANNEL_ID = "@metaformula_life"
 ADMIN_ID = 7830322013
 
-# Ресурсы
+# Ресурсы проекта (Эталонный стиль)
 LOGO_URL = "https://raw.githubusercontent.com/Elektra174/meta_navigator_bot/main/logo.png"
 LOGO_NAVIGATOR_URL = "https://raw.githubusercontent.com/Elektra174/meta_navigator_bot/main/logo11.png"
 PROTOCOL_URL = "https://raw.githubusercontent.com/Elektra174/meta_navigator_bot/main/Autopilot_System_Protocol.pdf"
@@ -69,11 +68,11 @@ ai_client = None
 if AI_KEY and CEREBRAS_AVAILABLE:
     try:
         ai_client = AsyncCerebras(api_key=AI_KEY)
-        logger.info("✅ Cerebras AI Engine: ONLINE (Identity Lab v5.5)")
+        logger.info("✅ Cerebras AI Engine: ONLINE (Identity Lab v5.7)")
     except Exception as e:
         logger.error(f"❌ AI Engine Init Error: {e}")
 
-# In-memory хранилище данных сессий
+# In-memory хранилище данных
 diagnostic_cache = {}
 
 class AuditState(StatesGroup):
@@ -84,14 +83,14 @@ class AuditState(StatesGroup):
 # =================================================================================================
 
 async def send_admin_alert(text: str):
-    """Системные уведомления Александру в личку"""
+    """Системные уведомления Александру"""
     try:
         await bot.send_message(ADMIN_ID, text, disable_web_page_preview=True)
     except Exception as e:
         logger.error(f"Alert error: {e}")
 
 # =================================================================================================
-# 3. МЕТОДОЛОГИЯ: ВОПРОСЫ (v4.8.1)
+# 3. МЕТОДОЛОГИЯ: ВОПРОСЫ (v4.8.1 - СУБЪЕКТНОСТЬ)
 # =================================================================================================
 
 QUESTIONS = [
@@ -105,16 +104,16 @@ QUESTIONS = [
     "📍 **Точка 8: Команда Автора.**\nТы готов признать себя Автором того, что происходит в твоем теле и твоей жизни, и перенастроить внутренний автопилот на реализацию твоих замыслов прямо сейчас?"
 ]
 
-# Промпт для ИИ
 SYSTEM_PROMPT = """ТЫ — СТАРШИЙ АРХИТЕКТОР ИДЕНТИЧНОСТИ IDENTITY LAB. Тон: Технический, научный. Обращайся только на "ТЫ".
+
 ЗАДАЧА: Сформировать отчет.
-1. АВТОРСТВО: Пиши "Ты сам сжимаешь [маркер]", возвращая ответственность.
-2. СИНТЕЗ РОЛИ: В МЕТА-МАЯКЕ синтезируй ЕДИНУЮ РОЛЬ (например, "Свободный Творец").
-3. МЕТАФОРМУЛА (v5.5): «Я Автор. Я ПРИЗНАЮ, что сам создаю этот сигнал [маркер] — это мой ресурс. Я НАПРАВЛЯЮ его на активацию [Синтезированная Роль]».
+1. АВТОРСТВО: Пиши "Ты сам сжимаешь [маркер]", подчеркивая, что это активное действие системы.
+2. СИНТЕЗ РОЛИ: В МЕТА-МАЯКЕ обязательно синтезируй ЕДИНУЮ РОЛЬ (например, "Свободный Творец"), не просто список слов.
+3. МЕТАФОРМУЛА (v5.7): «Я Автор. Я ПРИЗНАЮ, что сам создаю этот сигнал [маркер] — это мой ресурс. Я НАПРАВЛЯЮ его на активацию [Синтезированная Роль]».
 """
 
 # =================================================================================================
-# 4. ПРЕМИАЛЬНЫЙ HTML ШАБЛОН (Веб-отчет)
+# 4. ЭТАЛОННЫЙ HTML ШАБЛОН (Gold & Obsidian)
 # =================================================================================================
 
 HTML_TEMPLATE = """
@@ -123,7 +122,7 @@ HTML_TEMPLATE = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Identity Lab: Personal Audit</title>
+    <title>Identity Lab: Personal Report</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Roboto+Mono&display=swap" rel="stylesheet">
@@ -133,7 +132,7 @@ HTML_TEMPLATE = """
         .card {{ background: rgba(15,15,15,0.98); border: 1px solid #222; border-left: 5px solid var(--gold); border-radius: 12px; transition: all 0.4s; }}
         .card:hover {{ border-left-color: var(--cyan); box-shadow: 0 0 30px rgba(212, 175, 55, 0.15); }}
         .gold-text {{ color: var(--gold); text-shadow: 0 0 10px rgba(212, 175, 55, 0.3); }}
-        .btn {{ background: linear-gradient(135deg, #b4932c 0%, #D4AF37 100%); color: black; font-weight: 800; padding: 16px 40px; border-radius: 8px; text-transform: uppercase; display: inline-block; text-decoration: none; animation: pulse 2s infinite; }}
+        .btn {{ background: linear-gradient(135deg, #b4932c 0%, #D4AF37 100%); color: black; font-weight: 800; padding: 16px 40px; border-radius: 8px; text-transform: uppercase; letter-spacing: 2px; display: inline-block; text-decoration: none; animation: pulse 2.5s infinite; }}
         @keyframes pulse {{ 0% {{ box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.4); }} 70% {{ box-shadow: 0 0 0 20px rgba(212, 175, 55, 0); }} 100% {{ box-shadow: 0 0 0 0 rgba(212, 175, 55, 0); }} }}
         .mono {{ font-family: 'Roboto Mono', monospace; }}
     </style>
@@ -141,7 +140,7 @@ HTML_TEMPLATE = """
 <body class="p-6 md:p-12 max-w-5xl mx-auto">
     <header class="text-center mb-16 border-b border-gray-900 pb-10">
         <h1 class="text-6xl font-bold gold-text uppercase tracking-tighter">IDENTITY LAB</h1>
-        <p class="text-gray-500 mt-4 tracking-widest font-mono">ТЕХНИЧЕСКИЙ ПАСПОРТ: {user_name}</p>
+        <p class="text-xl text-gray-500 mt-4 tracking-widest font-mono">ТЕХНИЧЕСКИЙ ПАСПОРТ: {user_name}</p>
     </header>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
@@ -153,20 +152,20 @@ HTML_TEMPLATE = """
         <div class="card p-8">
             <h3 class="text-gray-400 uppercase text-sm mb-4">Нейро-статус</h3>
             <p class="text-gray-300 leading-relaxed">
-                Зафиксирована инерция старых доминант. Ваша Дефолт-система (DMN) утилизирует 80% энергии на поддержание гомеостаза. Требуется Сдвиг.
+                Обнаружена высокая инерция старых нейронных цепей. Система находится в режиме "Биологического Алиби", блокируя экспансию ради сохранения гомеостаза.
             </p>
         </div>
     </div>
 
     <div class="card p-10 mb-12">
-        <h2 class="text-2xl font-bold mb-6 border-b border-gray-800 pb-2 uppercase">Анализ Коннектома</h2>
+        <h2 class="text-2xl font-bold mb-6 border-b border-gray-800 pb-2 uppercase gold-text">Анализ Коннектома</h2>
         <div class="mono text-gray-300 leading-relaxed text-sm md:text-base">
             {report_html}
         </div>
     </div>
 
     <div class="text-center space-y-10">
-        <p class="text-gray-500 italic text-sm">Окно нейропластичности для фиксации этого Сдвига открыто 4 часа.</p>
+        <p class="text-gray-500 italic text-sm">Окно нейропластичности открыто 4 часа.</p>
         <a href="{practicum_link}" class="btn">АКТИВИРОВАТЬ АВТОРА</a>
         <br>
         <a href="{protocol_link}" class="text-gray-600 hover:text-gold transition-colors text-xs uppercase underline font-mono">Скачать Протокол PDF</a>
@@ -191,50 +190,47 @@ HTML_TEMPLATE = """
 """
 
 # =================================================================================================
-# 5. ГЛУБОКИЙ FALLBACK (ЛОКАЛЬНЫЙ МОЗГ БОТА)
+# 5. FALLBACK-АНАЛИТИКА (ЛОКАЛЬНЫЙ МОЗГ)
 # =================================================================================================
 
 def calculate_automatism_index(answers):
     text = " ".join(answers).lower()
-    bad = ['не знаю', 'боюсь', 'страх', 'лень', 'сомневаюсь', 'тупик', 'тяжело', 'сжатие', 'стена', 'вряд ли']
-    count = sum(1 for b in bad if b in text)
-    return min(95, max(65, 72 + (count * 3)))
+    stagnation = ['не знаю', 'боюсь', 'страх', 'лень', 'сомневаюсь', 'тупик', 'тяжело', 'сжатие', 'стена']
+    count = sum(1 for s in stagnation if s in text)
+    return min(95, max(65, 74 + (count * 3)))
 
-def generate_detailed_fallback_report(answers):
-    """Сборка полноценного отчета без участия облачного ИИ"""
+def generate_fallback_report(answers):
+    """Детальный отчет без ИИ"""
     idx = calculate_automatism_index(answers)
     safe = [a if a else "..." for a in answers]
     while len(safe) < 8: safe.append("...")
     
-    # Синтез роли из ответов
-    words = safe[1].replace(',', ' ').split()
-    role_base = words[0].capitalize() if words else "Автор"
-    synthesized_role = f"Мощный {role_base}"
+    raw_role = safe[1].replace(',', ' ').split()
+    synthesized_role = f"Мощный {raw_role[0].capitalize()}" if raw_role else "Автор"
     
-    report = f"""⬛️ [ТЕХНИЧЕСКОЕ ЗАКЛЮЧЕНИЕ: FALLBACK MODE] 📀
-
+    report = f"""⬛️ [ТЕХНИЧЕСКОЕ ЗАКЛЮЧЕНИЕ: FALLBACK] 📀
 📊 ИНДЕКС АВТОМАТИЗМА: {idx}%
 
 🧠 ДИАГНОСТИКА КОНТУРОВ:
-Образ "{safe[3]}" блокирует систему через сигнал "{safe[4]}". Это работа Биологического Алиби: твой мозг защищает тебя от новизны, считая её угрозой. Мысли "{safe[2]}" — это способ удержать гомеостаз.
+Образ "{safe[3]}" блокирует систему через сигнал "{safe[4]}". Это работа Биологического Алиби: мозг защищает тебя от новизны.
 
 🧬 РЕАКТОР ИДЕНТИЧНОСТИ:
-Раздражение на "{safe[6]}" — это твоя заблокированная сила. Мы возвращаем этот ресурс тебе.
+Раздражение на "{safe[6]}" — это твоя заблокированная сила. Мы возвращаем её тебе.
 
-📡 МЕТА-МАЯК (Эталонная Идентичность):
+📡 МЕТА-МАЯК:
 {synthesized_role}.
 
 🛠 МИНИ-ПРАКТИКУМ:
 1. Посмотри на образ "{safe[3]}" на сцене.
 2. Признай: «Это Я сжимаю {safe[4]}, чтобы защитить свой покой. Это МОЯ энергия».
-3. Впитай силу из образа. Позволь ему раствориться. Почувствуй себя {synthesized_role}.
+3. Впитай силу из образа. Образ растворяется. Почувствуй себя {synthesized_role}.
 
-⚡️ КОД ПЕРЕПРОШИВКИ (МЕТАФОРМУЛА):
-Произнеси вслух: «Я Автор. Я ПРИЗНАЮ, что сам создаю этот сигнал {safe[4]} — это мой ресурс. Я НАПРАВЛЯЮ его на активацию {synthesized_role}»."""
+⚡️ КОД ПЕРЕПРОШИВКИ:
+«Я Автор. Я ПРИЗНАЮ, что сам создаю этот сигнал {safe[4]} — это мой ресурс. Я НАПРАВЛЯЮ его на активацию {synthesized_role}»."""
     return report
 
 async def get_ai_report(answers):
-    if not ai_client: return generate_detailed_fallback_report(answers)
+    if not ai_client: return generate_fallback_report(answers)
     data_str = "ДАННЫЕ АУДИТА:\n" + "\n".join([f"T{i+1}: {a}" for i, a in enumerate(answers)])
     
     for attempt in range(3):
@@ -247,23 +243,30 @@ async def get_ai_report(answers):
         except Exception as e:
             logger.warning(f"AI Fail {attempt+1}: {e}")
             if attempt == 2:
-                # АЛЕРТ АДМИНУ: Закончились токены или упал API
-                await send_admin_alert(f"🚨 СБОЙ CEREBRAS API!\nЮзер: {len(answers)} ответов.\nПричина: {str(e)[:150]}\nВключен локальный Fallback.")
+                await send_admin_alert(f"🚨 СБОЙ CEREBRAS API!\nПричина: {str(e)[:150]}\nПереход на Fallback.")
             await asyncio.sleep(2 ** attempt)
             
-    return generate_detailed_fallback_report(answers)
+    return generate_fallback_report(answers)
+
+async def check_sub(user_id):
+    try:
+        member = await bot.get_chat_member(chat_id=CHANNEL_ID, user_id=user_id)
+        return member.status in ["member", "administrator", "creator"]
+    except: return False
 
 # =================================================================================================
 # 6. КЛАВИАТУРЫ
 # =================================================================================================
 
-def get_author_menu():
+def get_author_keyboard():
+    """Главная кнопка Меню внизу (Reply)"""
     return ReplyKeyboardBuilder().row(types.KeyboardButton(text="≡ МЕНЮ")).as_markup(resize_keyboard=True)
 
-def get_main_keyboard():
+def get_nav_menu():
+    """Инлайн-панель управления"""
     builder = InlineKeyboardBuilder()
     builder.row(types.InlineKeyboardButton(text="🚀 ЗАПУСТИТЬ АУДИТ", callback_data="run_audit"))
-    builder.row(types.InlineKeyboardButton(text="📥 СКАЧАТЬ ГАЙД", callback_data="get_pdf"))
+    builder.row(types.InlineKeyboardButton(text="📥 СКАЧАТЬ ГАЙД", callback_data="get_gaid"))
     builder.row(types.InlineKeyboardButton(text="⚡️ ПРАКТИКУМ", url=PRACTICUM_URL))
     builder.row(types.InlineKeyboardButton(text="📢 КАНАЛ", url=CHANNEL_LINK))
     builder.row(types.InlineKeyboardButton(text="💬 ПОДДЕРЖКА", url=SUPPORT_LINK))
@@ -295,13 +298,13 @@ async def cmd_start(message: types.Message, state: FSMContext):
             "Внутренний канал связи открыт.\n\n"
             "Система готова обнаружить твои скрытые механизмы инерции. Готов занять место Автора?"
         )
-        await message.answer_photo(LOGO_NAVIGATOR_URL, caption=caption, reply_markup=get_author_menu())
+        await message.answer_photo(LOGO_NAVIGATOR_URL, caption=caption, reply_markup=get_author_keyboard())
         await message.answer("Управление активно:", reply_markup=kb.as_markup())
 
 @dp.callback_query(F.data == "verify")
 async def verify_cb(cb: types.CallbackQuery, state: FSMContext):
     if await check_sub(cb.from_user.id):
-        await cb.answer("Доступ разрешен!")
+        await cb.answer("Доступ открыт!")
         await cmd_start(cb.message, state)
     else:
         await cb.answer("❌ Подписка не найдена!", show_alert=True)
@@ -309,10 +312,10 @@ async def verify_cb(cb: types.CallbackQuery, state: FSMContext):
 @dp.message(F.text == "≡ МЕНЮ")
 @dp.message(Command("menu"))
 async def cmd_menu(message: types.Message):
-    await message.answer("📋 Панель управления Identity Lab:", reply_markup=get_main_keyboard())
+    await message.answer("📋 Панель управления Identity Lab:", reply_markup=get_nav_menu())
 
 @dp.callback_query(F.data == "run_audit")
-async def run_audit_cb(cb: types.CallbackQuery, state: FSMContext):
+async def audit_cb(cb: types.CallbackQuery, state: FSMContext):
     await cb.answer()
     await state.update_data(step=0, answers=[])
     await cb.message.answer(
@@ -323,8 +326,8 @@ async def run_audit_cb(cb: types.CallbackQuery, state: FSMContext):
     await cb.message.answer(QUESTIONS[0], parse_mode="Markdown")
     await state.set_state(AuditState.answering)
 
-@dp.callback_query(F.data == "get_pdf")
-async def get_pdf_cb(cb: types.CallbackQuery):
+@dp.callback_query(F.data == "get_gaid")
+async def gaid_cb(cb: types.CallbackQuery):
     if cb.from_user.id not in diagnostic_cache:
         await cb.answer("Сначала пройди аудит! Гайд — это твоя карта после диагностики.", show_alert=True)
     else:
@@ -334,15 +337,15 @@ async def get_pdf_cb(cb: types.CallbackQuery):
 async def send_gaid(message: types.Message):
     try:
         await message.answer("📥 Формирую твой Технический Паспорт (Гайд)...")
-        async with ClientSession() as session:
-            async with session.get(PROTOCOL_URL) as resp:
-                if resp.status == 200:
-                    data = await resp.read()
+        async with ClientSession() as sess:
+            async with sess.get(PROTOCOL_URL) as r:
+                if r.status == 200:
+                    pdf = await r.read()
                     await message.answer_document(
-                        document=types.BufferedInputFile(data, filename="ПРОТОКОЛ_IDENTITY_v5.5.pdf"),
+                        document=types.BufferedInputFile(pdf, filename="ПРОТОКОЛ_IDENTITY_v5.7.pdf"),
                         caption="📘 Твой Гайд готов. Изучи раздел «Ловушка Интеллекта»."
                     )
-    except: await message.answer(f"Прямая ссылка на гайд: {PROTOCOL_URL}")
+    except: await message.answer(f"Прямая ссылка: {PROTOCOL_URL}")
 
 @dp.message(AuditState.answering)
 async def flow_handler(message: types.Message, state: FSMContext):
@@ -377,14 +380,14 @@ async def flow_handler(message: types.Message, state: FSMContext):
         kb.row(types.InlineKeyboardButton(text="⚡️ ПЕРЕЙТИ К ПРАКТИКУМУ", url=PRACTICUM_URL))
         
         await asyncio.sleep(2)
-        await message.answer("🎯 Аудит завершен. Чтобы закрепить Сдвиг — изучи веб-отчет:", reply_markup=kb.as_markup())
+        await message.answer("🎯 Аудит завершен. Изучи веб-отчет для фиксации Сдвига:", reply_markup=kb.as_markup())
         
-        # ОТЧЕТ АДМИНУ (Александру)
+        # ЛОГ АЛЕКСАНДРУ (Сессия + Отчет)
         try:
-            ans_str = "\n".join([f"{i+1}: {a}" for i, a in enumerate(answers)])
+            ans_log = "\n".join([f"{i+1}: {a}" for i, a in enumerate(answers)])
             await send_admin_alert(
-                f"🔔 НОВАЯ ДИАГНОСТИКА v5.5!\n👤 {message.from_user.full_name} (@{message.from_user.username})\n\n"
-                f"📝 ОТВЕТЫ:\n{ans_str}\n\n"
+                f"🔔 НОВАЯ ДИАГНОСТИКА v5.7!\n👤 {message.from_user.full_name} (@{message.from_user.username})\n\n"
+                f"📝 ОТВЕТЫ:\n{ans_log}\n\n"
                 f"🧠 ОТЧЕТ:\n{report[:1500]}"
             )
         except: pass
@@ -395,7 +398,7 @@ async def flow_handler(message: types.Message, state: FSMContext):
 # =================================================================================================
 
 async def handle_home(request):
-    return web.Response(text="Identity Lab System v5.5 ONLINE", content_type='text/plain')
+    return web.Response(text="Identity Lab System v5.7 ONLINE", content_type='text/plain')
 
 async def handle_report(request):
     try:
@@ -409,14 +412,20 @@ async def handle_report(request):
                 practicum_link=PRACTICUM_URL, protocol_link=PROTOCOL_URL
             )
             return web.Response(text=html, content_type='text/html')
-        return web.Response(text="Отчет не найден. Пройди аудит в боте.", status=404)
+        return web.Response(text="Отчет не найден.", status=404)
     except: return web.Response(text="Ошибка доступа.", status=500)
 
 async def on_startup(bot: Bot):
+    # Системные команды в Telegram
+    await bot.set_my_commands([
+        types.BotCommand(command="start", description="Запуск"),
+        types.BotCommand(command="menu", description="Управление"),
+        types.BotCommand(command="help", description="Поддержка")
+    ])
+    
     logger.info(f"🚀 Установка вебхука: {WEBHOOK_URL}")
     await bot.set_webhook(url=WEBHOOK_URL, drop_pending_updates=True)
-    # УВЕДОМЛЕНИЕ О ЗАПУСКЕ
-    await send_admin_alert(f"🚀 Identity Lab v5.5 УСПЕШНО ЗАПУЩЕН.\nПорт: {PORT}\nСтатус ИИ: {'✅' if ai_client else '❌'}")
+    await send_admin_alert(f"🚀 Identity Lab v5.7 ЗАПУЩЕН.\nПорт: {PORT}\nСтиль: GOLD ORIGINAL")
 
 def main():
     app = web.Application()
