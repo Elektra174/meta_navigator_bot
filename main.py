@@ -68,7 +68,7 @@ ai_client = None
 if AI_KEY and CEREBRAS_AVAILABLE:
     try:
         ai_client = AsyncCerebras(api_key=AI_KEY)
-        logger.info("✅ Cerebras AI Engine: ONLINE (Identity Lab v5.8)")
+        logger.info("✅ Cerebras AI Engine: ONLINE (Identity Lab v5.9)")
     except Exception as e:
         logger.error(f"❌ AI Engine Init Error: {e}")
 
@@ -109,7 +109,7 @@ SYSTEM_PROMPT = """ТЫ — СТАРШИЙ АРХИТЕКТОР ИДЕНТИЧН
 ЗАДАЧА: Сформировать отчет.
 1. АВТОРСТВО: Пиши "Ты сам сжимаешь [маркер]", подчеркивая, что Автопилот идеально выполняет команду на торможение.
 2. СИНТЕЗ РОЛИ: В МЕТА-МАЯКЕ обязательно синтезируй ЕДИНУЮ РОЛЬ (например, "Свободный Творец"), не просто список слов.
-3. МЕТАФОРМУЛА (v5.8): «Я Автор. Я ПРИЗНАЮ, что сам создаю этот сигнал [маркер] — это мой ресурс. Я НАПРАВЛЯЮ его на активацию [Синтезированная Роль]».
+3. МЕТАФОРМУЛА (v5.9): «Я Автор. Я ПРИЗНАЮ, что сам создаю этот сигнал [маркер] — это мой ресурс. Я НАПРАВЛЯЮ его на активацию [Синтезированная Роль]».
 """
 
 # =================================================================================================
@@ -132,7 +132,7 @@ HTML_TEMPLATE = """
         .card {{ background: rgba(15,15,15,0.98); border: 1px solid #222; border-left: 5px solid var(--gold); border-radius: 12px; transition: all 0.4s; }}
         .card:hover {{ border-left-color: var(--cyan); box-shadow: 0 0 30px rgba(212, 175, 55, 0.15); }}
         .gold-text {{ color: var(--gold); text-shadow: 0 0 10px rgba(212, 175, 55, 0.3); }}
-        .btn {{ background: linear-gradient(135deg, #b4932c 0%, #D4AF37 100%); color: black; font-weight: 800; padding: 16px 40px; border-radius: 8px; text-transform: uppercase; letter-spacing: 2px; display: inline-block; text-decoration: none; animation: pulse 2.5s infinite; }}
+        .btn {{ background: linear-gradient(135deg, #b4932c 0%, #D4AF37 100%); color: black; font-weight: 800; padding: 16px 40px; border-radius: 8px; text-transform: uppercase; letter-spacing: 2px; display: inline-block; text-decoration: none; animation: pulse 2s infinite; }}
         @keyframes pulse {{ 0% {{ box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.4); }} 70% {{ box-shadow: 0 0 0 20px rgba(212, 175, 55, 0); }} 100% {{ box-shadow: 0 0 0 0 rgba(212, 175, 55, 0); }} }}
         .mono {{ font-family: 'Roboto Mono', monospace; }}
     </style>
@@ -200,7 +200,7 @@ def calculate_automatism_index(answers):
     return min(95, max(65, 74 + (count * 3)))
 
 def generate_fallback_report(answers):
-    """Детальный отчет без ИИ (Identity Lab v5.8)"""
+    """Детальный отчет без ИИ (Identity Lab v5.9)"""
     idx = calculate_automatism_index(answers)
     safe = [a if a else "..." for a in answers]
     while len(safe) < 8: safe.append("...")
@@ -287,7 +287,7 @@ async def cmd_start(message: types.Message, state: FSMContext):
         kb.row(types.InlineKeyboardButton(text="✅ Проверить подписку", callback_data="verify"))
         caption = (
             "Лаборатория идентичности «Метаформула жизни»\n\n"
-            "Я — Мета-Навигатор. Я помогу тебе провести **Аудит твоего Автопилота**, найти точки утечки энергии и перехватить управление.\n\n"
+            "Я — Мета-Навигатор. Я помогу тебе провести Аудит твоего Автопилота, найти точки утечки энергии и перехватить управление.\n\n"
             "Для старта подпишись на наш канал:"
         )
         await message.answer_photo(LOGO_URL, caption=caption, reply_markup=kb.as_markup())
@@ -295,8 +295,8 @@ async def cmd_start(message: types.Message, state: FSMContext):
         kb = InlineKeyboardBuilder()
         kb.row(types.InlineKeyboardButton(text="🚀 ЗАПУСТИТЬ АУДИТ", callback_data="run_audit"))
         caption = (
-            "Протокол **Аудита Автопилота** готов к запуску.\n\n"
-            "Система обнаружит программы, которые управляют тобой в тени. Готов занять место Автора?"
+            "Протокол Аудита Автопилота готов к запуску.\n\n"
+            "Система обнаружит программы, которые управляют твоими реакциями автоматически. Готов занять место Автора?"
         )
         await message.answer_photo(LOGO_NAVIGATOR_URL, caption=caption, reply_markup=get_reply_menu())
         await message.answer("Управление активно:", reply_markup=kb.as_markup())
@@ -342,7 +342,7 @@ async def send_gaid(message: types.Message):
                 if r.status == 200:
                     pdf = await r.read()
                     await message.answer_document(
-                        document=types.BufferedInputFile(pdf, filename="ПРОТОКОЛ_IDENTITY_v5.8.pdf"),
+                        document=types.BufferedInputFile(pdf, filename="ПРОТОКОЛ_IDENTITY_v5.9.pdf"),
                         caption="📘 Твой Гайд готов. Изучи раздел «Ловушка Интеллекта»."
                     )
     except: await message.answer(f"Прямая ссылка на гайд: {PROTOCOL_URL}")
@@ -386,7 +386,7 @@ async def flow_handler(message: types.Message, state: FSMContext):
         try:
             ans_log = "\n".join([f"{i+1}: {a}" for i, a in enumerate(answers)])
             await send_admin_alert(
-                f"🔔 НОВАЯ ДИАГНОСТИКА v5.8!\n👤 {message.from_user.full_name} (@{message.from_user.username})\n\n"
+                f"🔔 НОВАЯ ДИАГНОСТИКА v5.9!\n👤 {message.from_user.full_name} (@{message.from_user.username})\n\n"
                 f"📝 ОТВЕТЫ:\n{ans_log}\n\n"
                 f"🧠 ОТЧЕТ:\n{report[:1500]}"
             )
@@ -398,7 +398,7 @@ async def flow_handler(message: types.Message, state: FSMContext):
 # =================================================================================================
 
 async def handle_home(request):
-    return web.Response(text="Identity Lab System v5.8 ONLINE", content_type='text/plain')
+    return web.Response(text="Identity Lab System v5.9 ONLINE", content_type='text/plain')
 
 async def handle_report(request):
     try:
@@ -425,7 +425,7 @@ async def on_startup(bot: Bot):
     
     logger.info(f"🚀 Установка вебхука: {WEBHOOK_URL}")
     await bot.set_webhook(url=WEBHOOK_URL, drop_pending_updates=True)
-    await send_admin_alert(f"🚀 Identity Lab v5.8 ЗАПУЩЕН.\nПорт: {PORT}\nСтиль: GOLD ORIGINAL (AUTOPILOT FOCUS)")
+    await send_admin_alert(f"🚀 Identity Lab v5.9 ЗАПУЩЕН.\nПорт: {PORT}\nСтиль: GOLD ORIGINAL (AUTOPILOT FOCUS)")
 
 def main():
     app = web.Application()
