@@ -13,7 +13,8 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
-from aiogram.webhook.aiohttp_server import TokenBasedRequestHandler, setup_application
+# Исправлен импорт: используем SimpleRequestHandler для одного бота
+from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 from aiohttp import web, ClientSession
 
 # =================================================================================================
@@ -519,8 +520,8 @@ def main():
     # Создаем aiohttp приложение
     app = web.Application()
     
-    # Настраиваем обработчик вебхука aiogram
-    webhook_requests_handler = TokenBasedRequestHandler(
+    # Исправлено: используем SimpleRequestHandler для одного бота
+    webhook_requests_handler = SimpleRequestHandler(
         dispatcher=dp,
         bot=bot,
     )
