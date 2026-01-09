@@ -13,6 +13,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
+from aiogram.webhook.aiohttp_server import TokenBasedRequestHandler, setup_application
 from aiohttp import web, ClientSession
 
 # =================================================================================================
@@ -34,6 +35,11 @@ except ImportError:
 # Загрузка переменных окружения
 TOKEN = os.getenv("BOT_TOKEN")
 AI_KEY = os.getenv("AI_API_KEY")
+RENDER_URL = os.getenv("RENDER_EXTERNAL_URL")  # Например: https://meta-navigator-bot-1.onrender.com
+
+# Настройки Webhook
+WEBHOOK_PATH = f"/webhook/{TOKEN}"
+WEBHOOK_URL = f"{RENDER_URL}{WEBHOOK_PATH}"
 
 # Основные ID администратора и канала
 CHANNEL_ID = "@metaformula_life"
@@ -320,7 +326,7 @@ async def check_sub(user_id):
         return member.status in ["member", "administrator", "creator"]
     except Exception as e:
         logger.error(f"Check sub error: {e}")
-        return False # В продакшене лучше False
+        return False
 
 async def send_guide(message: types.Message):
     """Отправка PDF Гайда"""
@@ -387,8 +393,6 @@ async def cmd_start(message: types.Message, state: FSMContext):
             "Система готова обнаружить твои скрытые стратегии торможения. Готов занять место Автора?"
         )
     
-    # Отправляем Логотип (Если подписан - один, если нет - другой, если ссылки разные)
-    # Используем LOGO_NAVIGATOR_URL для подписчиков, LOGO_URL для гостей
     image_url = LOGO_NAVIGATOR_URL if is_sub else LOGO_URL
     await message.answer_photo(image_url, caption=caption, reply_markup=kb.as_markup())
 
@@ -445,16 +449,11 @@ async def process_answers(message: types.Message, state: FSMContext):
         await state.update_data(step=next_step, answers=answers)
         await message.answer(QUESTIONS[next_step], parse_mode="Markdown")
     else:
-        # Финал
         await message.answer("🧠 **Идет дешифровка вашего Коннектома...**")
         
-        # Генерация отчета (AI или Fallback)
         report = await get_ai_report(answers)
-        
-        # Небольшая очистка форматирования
         report = report.replace('```', '').replace('**', '*') 
         
-        # Сохраняем данные для веб-отчета
         diagnostic_data[message.from_user.id] = {
             "user": message.from_user.full_name,
             "id": message.from_user.id,
@@ -463,14 +462,13 @@ async def process_answers(message: types.Message, state: FSMContext):
         }
         
         await message.answer(report)
-        
-        # Отправка Гайда
         await send_guide(message)
         
-        # Upsell на Практикум и Веб-отчет
         kb = InlineKeyboardBuilder()
         kb.row(types.InlineKeyboardButton(text="⚡️ ПЕРЕЙТИ К ПРАКТИКУМУ", url=PRACTICUM_URL))
-        kb.row(types.InlineKeyboardButton(text="📊 ОТКРЫТЬ ВЕБ-ОТЧЕТ", callback_data="web_report"))
+        # Здесь мы генерируем ссылку на веб-отчет используя внешний URL
+        web_report_url = f"{RENDER_URL}/report/{message.from_user.id}"
+        kb.row(types.InlineKeyboardButton(text="📊 ОТКРЫТЬ ВЕБ-ОТЧЕТ", url=web_report_url))
         kb.row(types.InlineKeyboardButton(text="≡ МЕНЮ", callback_data="menu"))
         
         await asyncio.sleep(2)
@@ -480,33 +478,15 @@ async def process_answers(message: types.Message, state: FSMContext):
             reply_markup=kb.as_markup()
         )
         
-        # Логируем
         await send_admin_log(message.from_user, report)
         await state.clear()
 
-@dp.callback_query(F.data == "web_report")
-async def web_report_cb(cb: types.CallbackQuery):
-    # Формируем ссылку на веб-отчет
-    host = os.environ.get("RENDER_EXTERNAL_URL", f"[http://0.0.0.0](http://0.0.0.0):{os.environ.get('PORT', 8080)}")
-    # Если локально, то host может быть странным, но на Render RENDER_EXTERNAL_URL должна сработать если задана
-    # Если нет, используем дефолтный домен render
-    if not os.environ.get("RENDER_EXTERNAL_URL"):
-         # Попытка угадать домен на Render (лучше задать RENDER_EXTERNAL_URL в env vars)
-         pass 
-
-    # Просто формируем путь от текущего хоста (в телеграме это будет ссылка)
-    # Для надежности на Render лучше просто использовать конструкцию:
-    url = f"[https://meta-navigator-bot.onrender.com/report/](https://meta-navigator-bot.onrender.com/report/){cb.from_user.id}"
-    
-    await cb.answer()
-    await cb.message.answer(f"🔗 Ваша персональная карта дешифровки:\n{url}")
-
 # =================================================================================================
-# 7. ВЕБ-СЕРВЕР (HEALTH CHECK & REPORT)
+# 7. ВЕБ-СЕРВЕР (WEBHOOK & REPORTS)
 # =================================================================================================
 
 async def handle_home(request):
-    return web.Response(text="Identity Lab System v4.8 Active")
+    return web.Response(text="✅ Identity Lab System v4.8: ONLINE (Webhook Mode)")
 
 async def handle_report(request):
     try:
@@ -517,7 +497,7 @@ async def handle_report(request):
                 user_name=data['user'],
                 user_id=data['id'],
                 date=data['date'],
-                report_text=data['report'],
+                report_text=data['report'].replace('\n', '<br>'),
                 practicum_link=PRACTICUM_URL,
                 protocol_link=PROTOCOL_URL
             )
@@ -526,36 +506,40 @@ async def handle_report(request):
     except:
         return web.Response(text="Ошибка доступа к отчету.", status=500)
 
-async def main():
-    # Очистка старых апдейтов
-    await bot.delete_webhook(drop_pending_updates=True)
-    
-    # Запуск веб-сервера
+async def on_startup(bot: Bot):
+    # Эта функция вызывается при старте сервера для регистрации вебхука в Telegram
+    logger.info(f"🚀 Setting webhook to: {WEBHOOK_URL}")
+    await bot.set_webhook(
+        url=WEBHOOK_URL,
+        drop_pending_updates=True,
+        allowed_updates=["message", "callback_query"]
+    )
+
+def main():
+    # Создаем aiohttp приложение
     app = web.Application()
+    
+    # Настраиваем обработчик вебхука aiogram
+    webhook_requests_handler = TokenBasedRequestHandler(
+        dispatcher=dp,
+        bot=bot,
+    )
+    # Регистрируем маршрут вебхука (путь должен совпадать с тем, что в WEBHOOK_PATH)
+    webhook_requests_handler.register(app, path=WEBHOOK_PATH)
+    
+    # Добавляем маршруты для проверки связи и отчетов
     app.router.add_get('/', handle_home)
-    app.router.add_get('/health', handle_home)
     app.router.add_get('/report/{user_id}', handle_report)
     
-    runner = web.AppRunner(app)
-    await runner.setup()
+    # Привязываем функцию on_startup
+    app.on_startup.append(lambda _: on_startup(bot))
     
-    # Получаем порт от Render
-    port = int(os.environ.get("PORT", 8080))
-    site = web.TCPSite(runner, '0.0.0.0', port)
-    await site.start()
+    # Связываем диспетчер и бота с приложением
+    setup_application(app, dp, bot=bot)
     
-    logger.info(f"🚀 Bot started via Polling on port {port}")
-    
-    # Запуск бота
-    try:
-        await dp.start_polling(bot)
-    except Exception as e:
-        logger.error(f"Polling error: {e}")
-    finally:
-        await runner.cleanup()
+    # Запуск сервера на порту от Render
+    port = int(os.environ.get("PORT", 10000))
+    web.run_app(app, host='0.0.0.0', port=port)
 
 if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except (KeyboardInterrupt, SystemExit):
-        logger.info("Bot stopped by user")
+    main()
