@@ -68,7 +68,7 @@ ai_client = None
 if AI_KEY and CEREBRAS_AVAILABLE:
     try:
         ai_client = AsyncCerebras(api_key=AI_KEY)
-        logger.info("✅ Cerebras AI Engine: ONLINE (Identity Lab v5.9)")
+        logger.info("✅ Cerebras AI Engine: ONLINE (Identity Lab v6.0)")
     except Exception as e:
         logger.error(f"❌ AI Engine Init Error: {e}")
 
@@ -109,7 +109,7 @@ SYSTEM_PROMPT = """ТЫ — СТАРШИЙ АРХИТЕКТОР ИДЕНТИЧН
 ЗАДАЧА: Сформировать отчет.
 1. АВТОРСТВО: Пиши "Ты сам сжимаешь [маркер]", подчеркивая, что Автопилот идеально выполняет команду на торможение.
 2. СИНТЕЗ РОЛИ: В МЕТА-МАЯКЕ обязательно синтезируй ЕДИНУЮ РОЛЬ (например, "Свободный Творец"), не просто список слов.
-3. МЕТАФОРМУЛА (v5.9): «Я Автор. Я ПРИЗНАЮ, что сам создаю этот сигнал [маркер] — это мой ресурс. Я НАПРАВЛЯЮ его на активацию [Синтезированная Роль]».
+3. МЕТАФОРМУЛА (v6.0): «Я Автор. Я ПРИЗНАЮ, что сам создаю этот сигнал [маркер] — это мой ресурс. Я НАПРАВЛЯЮ его на активацию [Синтезированная Роль]».
 """
 
 # =================================================================================================
@@ -200,7 +200,7 @@ def calculate_automatism_index(answers):
     return min(95, max(65, 74 + (count * 3)))
 
 def generate_fallback_report(answers):
-    """Детальный отчет без ИИ (Identity Lab v5.9)"""
+    """Детальный отчет без ИИ (Identity Lab v6.0)"""
     idx = calculate_automatism_index(answers)
     safe = [a if a else "..." for a in answers]
     while len(safe) < 8: safe.append("...")
@@ -320,7 +320,7 @@ async def audit_cb(cb: types.CallbackQuery, state: FSMContext):
     await state.update_data(step=0, answers=[])
     await cb.message.answer(
         "🔬 Инициализация протокола сканирования.\n\n"
-        "Отвечай максимально честно. Твое тело — самый точный прибор, оно не врет."
+        "Отвечай максимально честно. Чистота входящих данных — залог точности дешифровки твоего Автопилота."
     )
     await asyncio.sleep(1)
     await cb.message.answer(QUESTIONS[0], parse_mode="Markdown")
@@ -342,7 +342,7 @@ async def send_gaid(message: types.Message):
                 if r.status == 200:
                     pdf = await r.read()
                     await message.answer_document(
-                        document=types.BufferedInputFile(pdf, filename="ПРОТОКОЛ_IDENTITY_v5.9.pdf"),
+                        document=types.BufferedInputFile(pdf, filename="ПРОТОКОЛ_IDENTITY_v6.0.pdf"),
                         caption="📘 Твой Гайд готов. Изучи раздел «Ловушка Интеллекта»."
                     )
     except: await message.answer(f"Прямая ссылка на гайд: {PROTOCOL_URL}")
@@ -386,7 +386,7 @@ async def flow_handler(message: types.Message, state: FSMContext):
         try:
             ans_log = "\n".join([f"{i+1}: {a}" for i, a in enumerate(answers)])
             await send_admin_alert(
-                f"🔔 НОВАЯ ДИАГНОСТИКА v5.9!\n👤 {message.from_user.full_name} (@{message.from_user.username})\n\n"
+                f"🔔 НОВАЯ ДИАГНОСТИКА v6.0!\n👤 {message.from_user.full_name} (@{message.from_user.username})\n\n"
                 f"📝 ОТВЕТЫ:\n{ans_log}\n\n"
                 f"🧠 ОТЧЕТ:\n{report[:1500]}"
             )
@@ -398,7 +398,7 @@ async def flow_handler(message: types.Message, state: FSMContext):
 # =================================================================================================
 
 async def handle_home(request):
-    return web.Response(text="Identity Lab System v5.9 ONLINE", content_type='text/plain')
+    return web.Response(text="Identity Lab System v6.0 ONLINE", content_type='text/plain')
 
 async def handle_report(request):
     try:
@@ -425,7 +425,7 @@ async def on_startup(bot: Bot):
     
     logger.info(f"🚀 Установка вебхука: {WEBHOOK_URL}")
     await bot.set_webhook(url=WEBHOOK_URL, drop_pending_updates=True)
-    await send_admin_alert(f"🚀 Identity Lab v5.9 ЗАПУЩЕН.\nПорт: {PORT}\nСтиль: GOLD ORIGINAL (AUTOPILOT FOCUS)")
+    await send_admin_alert(f"🚀 Identity Lab v6.0 ЗАПУЩЕН.\nПорт: {PORT}\nСтиль: GOLD ORIGINAL (AUTOPILOT FOCUS)")
 
 def main():
     app = web.Application()
