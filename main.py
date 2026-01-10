@@ -31,7 +31,7 @@ if sys.platform != 'win32':
 
 # Загрузка конфигурации Firebase
 firebase_key_raw = os.getenv("FIREBASE_KEY")
-app_id = "identity-lab-v6"
+app_id = "identity-lab-v6" # ID для структуры Firestore
 
 if firebase_key_raw:
     try:
@@ -89,9 +89,6 @@ if AI_KEY and CEREBRAS_AVAILABLE:
     except Exception as e:
         logger.error(f"❌ AI Engine Init Error: {e}")
 
-# Хранилище данных (в памяти, если Firebase недоступен)
-diagnostic_cache = {}
-
 class AuditState(StatesGroup):
     answering = State()
 
@@ -101,9 +98,6 @@ class AuditState(StatesGroup):
 
 async def save_diagnostic(user_id, data):
     """Сохранение результатов аудита в базу данных"""
-    # Сохраняем в кэш всегда
-    diagnostic_cache[user_id] = data
-    
     if db:
         try:
             # Путь: artifacts/{app_id}/public/data/reports/{user_id}
@@ -116,10 +110,6 @@ async def save_diagnostic(user_id, data):
 
 async def get_diagnostic(user_id):
     """Получение результатов из базы данных для веб-страницы"""
-    # Сначала проверяем кэш
-    if user_id in diagnostic_cache:
-        return diagnostic_cache[user_id]
-        
     if db:
         try:
             doc_ref = db.collection("artifacts").document(app_id).collection("public").document("data").collection("reports").document(str(user_id))
@@ -136,13 +126,13 @@ async def get_diagnostic(user_id):
 
 QUESTIONS = [
     "📍 **Точка 1: Локация.**\nВ какой сфере жизни или в каком деле ты сейчас чувствуешь пробуксовку? Опиши ситуацию, где твои усилия не дают результата.",
-    "📍 **Точка 2: Мета-Маяк.**\nПредставь, что задача решена на 100%. Опиши свое состояние: какой ты теперь? (Например: спокойный, мощный, свободный). Как ты себя чувствуешь?",
+    "📍 **Точка 2: Мета-Маяк.**\nПредставь, что задача решена на 100%. Какой ты теперь? Подбери 3–4 слова (например: спокойный, мощный, свободный). Как ты себя чувствуешь?",
     "📍 **Точка 3: Архивный режим.**\nКакая «мыслительная жвачка» крутится у тебя в голове, когда ты думаешь о переменах? Какие сомнения ты себе приводишь?",
-    "📍 **Точка 4: Сцена.**\nПредставь перед собой пустую сцену и вынеси на неё то, что тебе мешает. Если бы это было образом или предметом, на что бы это было похоже? (Например: стена, туман, камень?)",
-    "📍 **Точка 5: Детекция сигнала.**\nПосмотри на этот образ на сцене. Где и какое ощущение возникает в теле (сжатие, холод, ком)? Опиши физику: что ты делаешь мышцами?",
-    "📍 **Точка 6: Биологическое Алиби.**\nТело всегда действует логично. Как ты думаешь, от чего тебя пытается защитить эта телесная реакция? (От риска, от лишних трат, от ошибки?)",
-    "📍 **Точка 7: Реинтеграция.**\nКакое качество в других людях тебя раздражает сильнее всего? (Например: наглость, навязчивость). Если представить, что за этим стоит сила — что это за сила и как бы ты мог использовать её себе на пользу?",
-    "📍 **Точка 8: Команда Автора.**\nТы готов признать себя Автором того, что происходит в твоем теле и жизни, и перенастроить свой автопилот прямо сейчас?"
+    "📍 **Точка 4: Сцена.**\nПредставь перед собой пустую сцену и вынеси на неё то, что тебе мешает (твой затык). На что бы оно могло быть похоже?",
+    "📍 **Точка 5: Детекция сигнала.**\nПосмотри на этот предмет на сцене. Где и какое ощущение возникает в теле (сжатие, холод, ком)? Что ты именно сейчас делаешь своим телом (напрягаешь мышцы, задерживаешь дыхание)?",
+    "📍 **Точка 6: Биологическое Алиби.**\nТело всегда действует логично. Как ты думаешь, от чего тебя пытается защитить или уберечь эта телесная реакция?",
+    "📍 **Точка 7: Реинтеграция.**\nКакое качество в поведении других людей тебя раздражает сильнее всего? Если представить, что за этим стоит сила — что это за сила и как бы ты мог использовать её себе на пользу?",
+    "📍 **Точка 8: Команда Автора.**\nТы готов признать себя Автором того, что происходит в твоем теле и твоей жизни, и перенастроить внутренний автопилот на реализацию твоих замыслов прямо сейчас?"
 ]
 
 SYSTEM_PROMPT = """ТЫ — СТАРШИЙ АРХИТЕКТОР ИДЕНТИЧНОСТИ IDENTITY LAB.
@@ -184,7 +174,7 @@ SYSTEM_PROMPT = """ТЫ — СТАРШИЙ АРХИТЕКТОР ИДЕНТИЧН
 """
 
 # =================================================================================================
-# 4. ШАБЛОН ВЕБ-ОТЧЕТА (GOLD & OBSIDIAN)
+# 4. ШАБЛОН ВЕБ-ОТЧЕТА (GOLD & OBSIDIAN - STYLED)
 # =================================================================================================
 
 HTML_TEMPLATE = """
@@ -198,60 +188,81 @@ HTML_TEMPLATE = """
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        :root {{ --bg: #050505; --gold: #D4AF37; --cyan: #00f3ff; --text: #e5e5e5; }}
+        :root {{ --bg: #050505; --gold: #D4AF37; --cyan: #00f3ff; --text: #e5e5e5; --card-bg: rgba(20, 20, 20, 0.95); }}
         body {{ background-color: var(--bg); color: var(--text); font-family: 'Rajdhani', sans-serif; }}
-        .card {{ background: rgba(15,15,15,0.98); border: 1px solid #222; border-left: 5px solid var(--gold); border-radius: 12px; transition: all 0.4s; }}
-        .card:hover {{ border-left-color: var(--cyan); box-shadow: 0 0 30px rgba(212, 175, 55, 0.15); }}
-        .gold-text {{ color: var(--gold); text-shadow: 0 0 10px rgba(212, 175, 55, 0.3); }}
-        .btn {{ background: linear-gradient(135deg, #b4932c 0%, #D4AF37 100%); color: black; font-weight: 800; padding: 16px 40px; border-radius: 8px; text-transform: uppercase; letter-spacing: 2px; display: inline-block; text-decoration: none; }}
         .mono {{ font-family: 'Roboto Mono', monospace; }}
-        canvas {{ max-width: 200px !important; max-height: 200px !important; }}
+        .cyber-card {{ background: var(--card-bg); border: 1px solid #333; border-left: 4px solid var(--gold); padding: 24px; border-radius: 8px; margin-bottom: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }}
+        .btn-gold {{ background: linear-gradient(to right, #b4932c, #D4AF37); color: #000; font-weight: bold; padding: 14px 28px; border-radius: 6px; text-transform: uppercase; transition: all 0.3s; display: inline-block; }}
+        .btn-gold:hover {{ transform: translateY(-2px); box-shadow: 0 0 15px rgba(212, 175, 55, 0.4); }}
+        .text-gold {{ color: var(--gold); }}
+        .text-cyan {{ color: var(--cyan); }}
     </style>
 </head>
-<body class="p-6 md:p-12 max-w-5xl mx-auto">
-    <header class="text-center mb-16 border-b border-gray-900 pb-10">
-        <h1 class="text-5xl md:text-7xl font-bold gold-text uppercase tracking-tighter">IDENTITY LAB</h1>
-        <p class="text-xl text-gray-500 mt-4 tracking-widest font-mono">ПЕРСОНАЛЬНАЯ КАРТА: {user_name}</p>
+<body class="p-4 md:p-8 max-w-4xl mx-auto min-h-screen flex flex-col items-center selection:bg-yellow-900 selection:text-white">
+    <header class="text-center mb-12 border-b border-gray-800 pb-8">
+        <p class="text-xs text-cyan tracking-[0.3em] uppercase mb-2 mono">Neuro-Architecture System</p>
+        <h1 class="text-5xl md:text-7xl font-bold text-gold mb-2 tracking-tight">IDENTITY LAB</h1>
+        <p class="text-xl text-gray-400">Персональная карта дешифровки: <span class="text-white">{user_name}</span></p>
     </header>
-
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-        <div class="card p-8 flex flex-col items-center justify-center text-center">
-            <h3 class="text-gray-400 uppercase text-xs mb-6 tracking-widest">Индекс Автоматизма</h3>
-            <canvas id="idxChart" style="max-width:200px"></canvas>
-            <div class="text-5xl font-bold mt-6 gold-text">{index}%</div>
+    
+    <main class="w-full flex-grow">
+        <!-- Chart Section -->
+        <div class="cyber-card flex flex-col md:flex-row items-center gap-8 justify-center">
+            <div class="relative w-40 h-40 flex-shrink-0">
+                 <canvas id="statusChart"></canvas>
+                 <div class="absolute inset-0 flex items-center justify-center flex-col">
+                    <span class="text-2xl font-bold text-white">{idx}%</span>
+                 </div>
+            </div>
+            <div class="text-center md:text-left">
+                <h2 class="text-xl font-bold text-white mb-2">Индекс Автоматизма</h2>
+                <p class="text-gray-400 text-sm max-w-md">
+                    Ваша система работает в режиме защиты (<span class="text-gold">Биологическое Алиби</span>).
+                </p>
+            </div>
         </div>
-        <div class="card p-8">
-            <h3 class="text-gray-400 uppercase text-xs mb-4 tracking-widest">Статус системы</h3>
-            <p class="text-gray-300 leading-relaxed text-lg">
-                Зафиксирована высокая инерция биологических программ. Ваша Дефолт-система мозга (ДСМ) утилизирует энергию на удержание текущего состояния. Требуется немедленный Сдвиг в роль Автора.
-            </p>
-        </div>
-    </div>
 
-    <div class="card p-8 md:p-12 mb-12">
-        <h2 class="text-2xl font-bold mb-8 border-b border-gray-800 pb-4 uppercase gold-text tracking-widest">Нейро-Синтез Данных</h2>
-        <div class="mono text-gray-300 leading-relaxed text-sm md:text-base whitespace-pre-wrap">{report_html}</div>
-    </div>
-
-    <div class="text-center space-y-12">
-        <a href="{practicum_link}" class="btn">АКТИВИРОВАТЬ ИДЕНТИЧНОСТЬ</a>
-        <div class="pt-8">
-            <a href="{protocol_link}" class="text-gray-600 hover:gold-text text-xs uppercase underline font-mono">Скачать PDF Протокол</a>
+        <!-- Report Text -->
+        <div class="cyber-card">
+            <h2 class="text-xl font-bold text-white mb-4 border-b border-gray-800 pb-2 flex items-center">
+                <span class="text-gold mr-2">⚡️</span> НЕЙРО-СИНТЕЗ ДАННЫХ
+            </h2>
+            <div class="mono whitespace-pre-wrap text-gray-300 text-sm md:text-base leading-relaxed">
+{report_text}
+            </div>
         </div>
-    </div>
+
+        <!-- CTA -->
+        <div class="text-center py-8 space-y-6">
+            <p class="text-gray-400 text-sm">Окно нейропластичности открыто (4 часа).<br>Закрепите результат действием.</p>
+            <div class="flex flex-col md:flex-row gap-4 justify-center">
+                <a href="{practicum_link}" class="btn-gold">🚀 ЗАПУСТИТЬ ПРАКТИКУМ</a>
+                <a href="{protocol_link}" class="border border-gray-700 text-gray-400 hover:text-white py-3 px-8 rounded uppercase font-bold transition hover:bg-gray-800 flex items-center justify-center text-sm">
+                    📥 Скачать Гайд
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <footer class="w-full text-center py-8 mt-auto border-t border-gray-900 text-[10px] text-gray-600 mono">
+        © 2026 IDENTITY LAB | ALEXANDER LAZARENKO
+    </footer>
 
     <script>
-        const ctx = document.getElementById('idxChart').getContext('2d');
+        const ctx = document.getElementById('statusChart').getContext('2d');
         new Chart(ctx, {{
             type: 'doughnut',
             data: {{
+                labels: ['Автоматизм', 'Авторство'],
                 datasets: [{{
-                    data: [{index}, {remain}],
-                    backgroundColor: ['#D4AF37', '#111'],
-                    borderWidth: 0
+                    data: [{idx}, {inv_idx}],
+                    backgroundColor: ['#1f1f1f', '#D4AF37'],
+                    borderColor: '#050505',
+                    borderWidth: 3,
+                    cutout: '85%'
                 }}]
             }},
-            options: {{ cutout: '85%', plugins: {{ legend: {{ display: false }}, tooltip: {{ enabled: false }} }} }}
+            options: {{ responsive: true, plugins: {{ legend: {{ display: false }}, tooltip: {{ enabled: false }} }} }}
         }});
     </script>
 </body>
@@ -366,6 +377,16 @@ async def cmd_start(message: types.Message, state: FSMContext):
         cap = "🧠 Система синхронизирована. Готов занять место Автора и начать дешифровку коннектома?"
         await message.answer_photo(LOGO_NAVIGATOR_URL, caption=cap, reply_markup=get_main_keyboard())
 
+@dp.message(F.text == "≡ МЕНЮ")
+@dp.message(Command("menu"))
+async def cmd_menu(message: types.Message):
+    await message.answer("📋 **Меню Identity Lab:**", reply_markup=get_main_keyboard(), parse_mode="Markdown")
+
+@dp.callback_query(F.data == "menu")
+async def cb_menu(cb: types.CallbackQuery):
+    await cb.answer()
+    await cb.message.answer("📋 **Меню Identity Lab:**", reply_markup=get_main_keyboard(), parse_mode="Markdown")
+
 @dp.callback_query(F.data == "check")
 async def check_cb(cb: types.CallbackQuery, state: FSMContext):
     if await check_sub(cb.from_user.id):
@@ -373,11 +394,6 @@ async def check_cb(cb: types.CallbackQuery, state: FSMContext):
         await cmd_start(cb.message, state)
     else:
         await cb.answer("Подписка не найдена!", show_alert=True)
-
-@dp.message(F.text == "≡ МЕНЮ")
-@dp.message(Command("menu"))
-async def cmd_menu(message: types.Message):
-    await message.answer("📋 Панель управления Identity Lab:", reply_markup=get_main_keyboard())
 
 @dp.callback_query(F.data == "run")
 async def audit_start(cb: types.CallbackQuery, state: FSMContext):
@@ -391,13 +407,12 @@ async def audit_start(cb: types.CallbackQuery, state: FSMContext):
 @dp.callback_query(F.data == "get_guide")
 async def get_guide_cb(cb: types.CallbackQuery):
     # Проверка базы данных (Firestore)
-    user_id = cb.from_user.id
-    data = await get_diagnostic(user_id)
-    
-    # Если данных нет в базе, проверяем локальный кэш
-    if not data and user_id not in diagnostic_cache:
-        await cb.answer("🚫 Сначала пройдите Аудит!", show_alert=True)
-        return
+    data = await get_diagnostic(cb.from_user.id)
+    if not data:
+        # Также проверяем локальный кэш на всякий случай
+        if cb.from_user.id not in diagnostic_data:
+            await cb.answer("🚫 Сначала пройдите Аудит!", show_alert=True)
+            return
     
     await cb.answer("Отправляю...")
     await send_guide(cb.message)
@@ -433,6 +448,7 @@ async def process_answers(message: types.Message, state: FSMContext):
         
         # СОХРАНЕНИЕ: И в базу (Firestore), и в кэш (RAM)
         await save_diagnostic(message.from_user.id, diag_data)
+        diagnostic_data[message.from_user.id] = diag_data
         
         await status_msg.edit_text(report.replace('**', '*'))
         await send_guide(message)
@@ -457,22 +473,20 @@ async def process_answers(message: types.Message, state: FSMContext):
 # =================================================================================================
 
 async def handle_home(request):
-    return web.Response(text="Identity Lab System v6.6 Active")
+    return web.Response(text="Identity Lab System v6.7 Active")
 
 async def handle_report(request):
     try:
         user_id = int(request.match_info['user_id'])
-        # Ищем сначала в базе, потом в кэше
-        d = await get_diagnostic(user_id) 
+        d = await get_diagnostic(user_id) # Сначала пробуем из базы
         if not d:
-            d = diagnostic_cache.get(user_id)
+            d = diagnostic_data.get(int(user_id)) # Потом из кэша
             
         if d:
             html = HTML_TEMPLATE.format(
                 user_name=d['name'], index=d['index'], remain=100-d['index'],
                 report_html=d['report'].replace('\n', '<br>'),
-                practicum_link=PRACTICUM_URL, protocol_link=PROTOCOL_URL,
-                user_id=user_id, date=d['date']
+                practicum_link=PRACTICUM_URL, protocol_link=PROTOCOL_URL
             )
             return web.Response(text=html, content_type='text/html')
         return web.Response(text="Отчет не найден. Пройдите аудит в боте.", status=404)
@@ -487,7 +501,7 @@ async def on_startup(bot: Bot):
         types.BotCommand(command="start", description="Запуск"),
         types.BotCommand(command="menu", description="Управление")
     ])
-    await send_admin_alert("🚀 **Identity Lab v6.6 СИНХРОНИЗИРОВАН**\nFirestore Active. Webhook Active.")
+    await send_admin_alert("🚀 **Identity Lab v6.7 СИНХРОНИЗИРОВАН**\nFirestore Active. Webhook Active.")
 
 def main():
     app = web.Application()
