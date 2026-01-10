@@ -68,7 +68,7 @@ ADMIN_ID = 7830322013
 
 # Ресурсы проекта
 LOGO_URL = "https://raw.githubusercontent.com/Elektra174/meta_navigator_bot/main/logo.png"
-LOGO_NAVIGATOR_URL = "https://raw.githubusercontent.com/Elektra174/meta_navigator_bot/main/logo1.png"
+LOGO_NAVIGATOR_URL = "https://raw.githubusercontent.com/Elektra174/meta_navigator_bot/main/logo1.jpg"
 PROTOCOL_URL = "https://raw.githubusercontent.com/Elektra174/meta_navigator_bot/main/Autopilot_System_Protocol.pdf"
 PRACTICUM_URL = "https://www.youtube.com/@МетаформулаЖизни" 
 CHANNEL_LINK = "https://t.me/metaformula_life"
@@ -519,4 +519,5 @@ if __name__ == "__main__":
         main()
     except (KeyboardInterrupt, SystemExit):
         logger.info("Bot stopped.")
+
 
