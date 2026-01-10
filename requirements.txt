@@ -3,4 +3,5 @@ cerebras-cloud-sdk
 python-dotenv
 aiohttp
 uvloop
+firebase-admin
 
