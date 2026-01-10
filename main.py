@@ -70,7 +70,7 @@ ADMIN_ID = 7830322013
 LOGO_URL = "https://raw.githubusercontent.com/Elektra174/meta_navigator_bot/main/logo.png"
 LOGO_NAVIGATOR_URL = "https://raw.githubusercontent.com/Elektra174/meta_navigator_bot/main/logo11.png"
 PROTOCOL_URL = "https://raw.githubusercontent.com/Elektra174/meta_navigator_bot/main/Autopilot_System_Protocol.pdf"
-PRACTICUM_URL = "https://www.youtube.com/@МетаформулаЖизни"
+PRACTICUM_URL = "https://www.youtube.com/@МетаформулаЖизни" # Заглушка
 CHANNEL_LINK = "https://t.me/metaformula_life"
 SUPPORT_LINK = "https://t.me/lazalex81"
 
@@ -125,13 +125,13 @@ async def get_diagnostic(user_id):
 # =================================================================================================
 
 QUESTIONS = [
-    "📍 **Точка 1: Локация.**\nВ какой сфере жизни или в каком деле ты сейчас чувствуешь пробуксовку? Опиши ситуацию, где твои усилия не дают результата.",
-    "📍 **Точка 2: Мета-Маяк.**\nПредставь, что задача решена на 100%. Какой ты теперь? Подбери 3–4 слова (например: спокойный, мощный, свободный). Как ты себя чувствуешь?",
-    "📍 **Точка 3: Архивный режим.**\nКакая «мыслительная жвачка» крутится у тебя в голове, когда ты думаешь о переменах? Какие сомнения ты себе приводишь?",
-    "📍 **Точка 4: Сцена.**\nПредставь перед собой пустую сцену и вынеси на неё то, что тебе мешает (твой затык). На что бы оно могло быть похоже?",
-    "📍 **Точка 5: Детекция сигнала.**\nПосмотри на этот предмет на сцене. Где и какое ощущение возникает в теле (сжатие, холод, ком)? Что ты именно сейчас делаешь своим телом (напрягаешь мышцы, задерживаешь дыхание)?",
-    "📍 **Точка 6: Биологическое Алиби.**\nТело всегда действует логично. Как ты думаешь, от чего тебя пытается защитить или уберечь эта телесная реакция?",
-    "📍 **Точка 7: Реинтеграция.**\nКакое качество в поведении других людей тебя раздражает сильнее всего? Если представить, что за этим качеством стоит какая-то скрытая сила — что это за сила и как бы ты мог использовать её себе на пользу?",
+    "📍 **Точка 1: Локация.**\nВ какой сфере жизни или в каком деле ты сейчас чувствуешь пробуксовку? Опиши ситуацию, где твои усилия не дают того результата, на который ты рассчитываешь.",
+    "📍 **Точка 2: Мета-Маяк.**\nПредставь, что задача решена на 100%. Опиши свое состояние в этой точке: какой ты теперь? Подбери 3–4 слова (например: спокойный, мощный, свободный). Как ты себя чувствуешь и как теперь смотришь на мир?",
+    "📍 **Точка 3: Архивный режим.**\nКакая «мыслительная жвачка» крутится у тебя в голове, когда ты думаешь о переменах? Какие сомнения или доводы ты себе приводишь, чтобы оправдать текущую ситуацию?",
+    "📍 **Точка 4: Сцена.**\nПредставь перед собой пустую сцену и вынеси на неё то, что тебе мешает. Если бы оно было образом или предметом... на что бы оно могло быть похоже? (Например: стена, туман, тяжелый шар?)",
+    "📍 **Точка 5: Детекция сигнала.**\nПосмотри на этот предмет на сцене. Что происходит в твоем теле, когда ты его наблюдаешь? Где возникает отклик (сжатие, холод, ком)? Опиши, что именно ты сейчас делаешь со своим телом: может, напрягаешь мышцы, задерживаешь дыхание или хочешь отвернуться?",
+    "📍 **Точка 6: Биологическое Алиби.**\nТело всегда действует логично. Как ты думаешь, от чего тебя пытается защитить или уберечь эта телесная реакция при взгляде на препятствие? (Например: от риска, от лишних трат энергии или от чужого мнения?)",
+    "📍 **Точка 7: Реинтеграция.**\nКакое качество в поведении других людей тебя раздражает сильнее всего? (Например: чья-то «наглость» или «выскочковость»). Если представить, что за этим качеством стоит какая-то скрытая сила — как ты думаешь, что это за сила? И как бы ты мог использовать её себе на пользу?",
     "📍 **Точка 8: Команда Автора.**\nТы готов признать себя Автором того, что происходит в твоем теле и твоей жизни, и перенастроить внутренний автопилот на реализацию твоих замыслов прямо сейчас?"
 ]
 
@@ -146,7 +146,7 @@ SYSTEM_PROMPT = """ТЫ — СТАРШИЙ АРХИТЕКТОР ИДЕНТИЧН
 """
 
 # =================================================================================================
-# 4. ШАБЛОН ВЕБ-ОТЧЕТА (GOLD & OBSIDIAN - STYLED)
+# 4. ШАБЛОН ВЕБ-ОТЧЕТА (GOLD & OBSIDIAN)
 # =================================================================================================
 
 HTML_TEMPLATE = """
@@ -157,17 +157,16 @@ HTML_TEMPLATE = """
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Identity Lab Report</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        :root {{ --bg: #050505; --gold: #D4AF37; --cyan: #00f3ff; --text: #e5e5e5; --card-bg: rgba(20, 20, 20, 0.95); }}
+        :root {{ --bg: #050505; --gold: #D4AF37; --cyan: #00f3ff; --text: #e5e5e5; }}
         body {{ background-color: var(--bg); color: var(--text); font-family: 'Rajdhani', sans-serif; }}
-        .mono {{ font-family: 'Roboto Mono', monospace; }}
-        .cyber-card {{ background: var(--card-bg); border: 1px solid #333; border-left: 4px solid var(--gold); padding: 24px; border-radius: 8px; margin-bottom: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }}
+        .card {{ background: rgba(20,20,20,0.95); border: 1px solid #333; border-left: 4px solid var(--gold); padding: 24px; border-radius: 8px; margin-bottom: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }}
         .btn-gold {{ background: linear-gradient(to right, #b4932c, #D4AF37); color: #000; font-weight: bold; padding: 14px 28px; border-radius: 6px; text-transform: uppercase; transition: all 0.3s; display: inline-block; }}
         .btn-gold:hover {{ transform: translateY(-2px); box-shadow: 0 0 15px rgba(212, 175, 55, 0.4); }}
         .text-gold {{ color: var(--gold); }}
         .text-cyan {{ color: var(--cyan); }}
+        .mono {{ font-family: 'Roboto Mono', monospace; }}
     </style>
 </head>
 <body class="p-4 md:p-8 max-w-4xl mx-auto min-h-screen flex flex-col items-center selection:bg-yellow-900 selection:text-white">
@@ -178,28 +177,27 @@ HTML_TEMPLATE = """
     </header>
     
     <main class="w-full flex-grow">
-        <!-- Chart Section -->
-        <div class="cyber-card flex flex-col md:flex-row items-center gap-8 justify-center">
-            <div class="relative w-40 h-40 flex-shrink-0">
-                 <canvas id="statusChart"></canvas>
-                 <div class="absolute inset-0 flex items-center justify-center flex-col">
-                    <span class="text-2xl font-bold text-white">{idx}%</span>
-                 </div>
+        <!-- Index Block -->
+        <div class="card flex flex-col md:flex-row items-center gap-8 justify-center">
+            <div class="text-center">
+                 <div class="text-6xl font-bold text-white mb-2">{idx}%</div>
+                 <span class="text-xs text-gray-500 uppercase tracking-widest">Индекс Автоматизма</span>
             </div>
-            <div class="text-center md:text-left">
-                <h2 class="text-xl font-bold text-white mb-2">Индекс Автоматизма</h2>
+            <div class="text-center md:text-left border-l border-gray-800 pl-8">
+                <h2 class="text-xl font-bold text-white mb-2">Статус Системы</h2>
                 <p class="text-gray-400 text-sm max-w-md">
                     Ваша система работает в режиме защиты (<span class="text-gold">Биологическое Алиби</span>).
+                    Энергия уходит на удержание гомеостаза.
                 </p>
             </div>
         </div>
 
         <!-- Report Text -->
-        <div class="cyber-card">
+        <div class="card">
             <h2 class="text-xl font-bold text-white mb-4 border-b border-gray-800 pb-2 flex items-center">
                 <span class="text-gold mr-2">⚡️</span> НЕЙРО-СИНТЕЗ ДАННЫХ
             </h2>
-            <div class="mono whitespace-pre-wrap text-gray-300 text-sm md:text-base leading-relaxed">
+            <div class="mono whitespace-pre-wrap text-gray-300 text-sm leading-relaxed">
 {report_text}
             </div>
         </div>
@@ -219,24 +217,6 @@ HTML_TEMPLATE = """
     <footer class="w-full text-center py-8 mt-auto border-t border-gray-900 text-[10px] text-gray-600 mono">
         © 2026 IDENTITY LAB | ALEXANDER LAZARENKO
     </footer>
-
-    <script>
-        const ctx = document.getElementById('statusChart').getContext('2d');
-        new Chart(ctx, {{
-            type: 'doughnut',
-            data: {{
-                labels: ['Автоматизм', 'Авторство'],
-                datasets: [{{
-                    data: [{idx}, {inv_idx}],
-                    backgroundColor: ['#1f1f1f', '#D4AF37'],
-                    borderColor: '#050505',
-                    borderWidth: 3,
-                    cutout: '85%'
-                }}]
-            }},
-            options: {{ responsive: true, plugins: {{ legend: {{ display: false }}, tooltip: {{ enabled: false }} }} }}
-        }});
-    </script>
 </body>
 </html>
 """
@@ -293,6 +273,36 @@ def get_main_keyboard():
 def get_reply_menu():
     return ReplyKeyboardBuilder().row(types.KeyboardButton(text="≡ МЕНЮ")).as_markup(resize_keyboard=True)
 
+async def send_guide(message: types.Message):
+    """Отправка PDF Гайда"""
+    try:
+        await message.answer("📥 **Формирую ваш Технический Паспорт (Гайд)...**", parse_mode="Markdown")
+        async with ClientSession() as session:
+            async with session.get(PROTOCOL_URL) as resp:
+                if resp.status == 200:
+                    pdf_data = await resp.read()
+                    await message.answer_document(
+                        document=types.BufferedInputFile(pdf_data, filename="ПРОТОКОЛ_ДЕШИФРОВКИ.pdf"),
+                        caption="📘 Ваш Гайд готов. Изучи раздел «Ловушка Интеллекта»."
+                    )
+                else:
+                    raise Exception(f"Failed to download PDF: {resp.status}")
+    except Exception as e:
+        logger.error(f"Guide send error: {e}")
+        await message.answer(f"📥 Не удалось отправить файл напрямую. Скачайте его по ссылке:\n{PROTOCOL_URL}")
+
+async def send_admin_log(user: types.User, report: str, answers: list):
+    """Логирование действий в админку"""
+    try:
+        ans_log = "\n".join([f"{i+1}: {a}" for i, a in enumerate(answers)])
+        await bot.send_message(
+            chat_id=ADMIN_ID,
+            text=f"🔔 **НОВАЯ ДИАГНОСТИКА!**\n👤 {user.full_name} (@{user.username})\n\n**ОТВЕТЫ:**\n{ans_log}\n\n**ОТЧЕТ:**\n{report[:2000]}...",
+            disable_web_page_preview=True
+        )
+    except Exception as e:
+        logger.error(f"Admin log error: {e}")
+
 # =================================================================================================
 # 6. ОБРАБОТЧИКИ ТЕЛЕГРАМ (HANDLERS)
 # =================================================================================================
@@ -301,20 +311,29 @@ def get_reply_menu():
 async def cmd_start(message: types.Message, state: FSMContext):
     await state.clear()
     is_sub = await check_sub(message.from_user.id)
+    
+    # Показываем нижнюю кнопку МЕНЮ всегда
+    await message.answer("Система загружается...", reply_markup=get_reply_menu())
+    
+    kb = InlineKeyboardBuilder()
     if not is_sub:
-        kb = InlineKeyboardBuilder()
         kb.row(types.InlineKeyboardButton(text="📢 Подписаться на канал", url=CHANNEL_LINK))
         kb.row(types.InlineKeyboardButton(text="✅ Проверить подписку", callback_data="check"))
         cap = (
-            "👋 Лаборатория идентичности «Метаформула жизни»\n\n"
+            "👋 **Лаборатория Идентичности 'Метаформула жизни'**\n\n"
             "Я — Мета-Навигатор. Я помогу тебе найти точки утечки энергии и перехватить управление у биологического автопилота.\n\n"
             "Для начала работы подпишись на наш канал:"
         )
         await message.answer_photo(LOGO_URL, caption=cap, reply_markup=kb.as_markup())
     else:
-        cap = "🧠 Система синхронизирована. Готов занять место Автора и начать дешифровку коннектома?"
-        await message.answer_photo(LOGO_NAVIGATOR_URL, caption=cap, reply_markup=get_reply_menu())
-        await message.answer("Управление активно:", reply_markup=get_main_keyboard())
+        kb.row(types.InlineKeyboardButton(text="🚀 НАЧАТЬ АУДИТ", callback_data="run"))
+        cap = "🧠 **Система синхронизирована.**\n\nЯ готов обнаружить программы, которые управляют твоими реакциями автоматически. Готов занять место Автора?"
+        await message.answer_photo(LOGO_NAVIGATOR_URL, caption=cap, reply_markup=kb.as_markup())
+
+@dp.message(F.text == "≡ МЕНЮ")
+@dp.message(Command("menu"))
+async def cmd_menu(message: types.Message):
+    await message.answer("📋 **Меню Identity Lab:**", reply_markup=get_main_keyboard(), parse_mode="Markdown")
 
 @dp.callback_query(F.data == "check")
 async def check_cb(cb: types.CallbackQuery, state: FSMContext):
@@ -324,36 +343,27 @@ async def check_cb(cb: types.CallbackQuery, state: FSMContext):
     else:
         await cb.answer("Подписка не найдена!", show_alert=True)
 
-@dp.message(F.text == "≡ МЕНЮ")
-@dp.message(Command("menu"))
-async def cmd_menu(message: types.Message):
-    await message.answer("📋 Панель управления Identity Lab:", reply_markup=get_main_keyboard())
-
 @dp.callback_query(F.data == "run")
 async def audit_start(cb: types.CallbackQuery, state: FSMContext):
     await cb.answer()
     await state.update_data(step=0, answers=[])
-    await cb.message.answer("🔬 **Инициализация протокола.**\nОтвечай честно. Твоё тело не врет.")
+    await cb.message.answer("🔬 **Инициализация протокола.**\nОтвечай честно. Твоё тело — самый точный прибор.")
     await asyncio.sleep(1)
     await cb.message.answer(QUESTIONS[0], parse_mode="Markdown")
     await state.set_state(AuditState.answering)
 
 @dp.callback_query(F.data == "get_guide")
 async def get_guide_cb(cb: types.CallbackQuery):
+    # Проверка: проходил ли аудит (есть ли в базе)
     data = await get_diagnostic(cb.from_user.id)
     if not data:
-        # Проверка локального кэша, если база недоступна
+        # Также проверяем локальный кэш на всякий случай
         if cb.from_user.id not in diagnostic_data:
             await cb.answer("🚫 Сначала пройдите Аудит!", show_alert=True)
             return
     
     await cb.answer("Отправляю...")
-    try:
-        async with ClientSession() as sess:
-            async with sess.get(PROTOCOL_URL) as r:
-                if r.status == 200:
-                    await cb.message.answer_document(types.BufferedInputFile(await r.read(), filename="ПРОТОКОЛ_IDENTITY.pdf"), caption="📘 Твой Гайд готов.")
-    except: await cb.message.answer(f"📥 Прямая ссылка: {PROTOCOL_URL}")
+    await send_guide(cb.message)
 
 @dp.message(AuditState.answering)
 async def process_answers(message: types.Message, state: FSMContext):
@@ -378,11 +388,12 @@ async def process_answers(message: types.Message, state: FSMContext):
             "date": datetime.now().strftime("%d.%m.%Y %H:%M")
         }
         
-        # СОХРАНЕНИЕ В ОБЛАКО И КЭШ
+        # Сохраняем везде
         await save_diagnostic(message.from_user.id, diag_data)
-        diagnostic_data[message.from_user.id] = diag_data # Для веб-отчета (быстрый доступ)
+        diagnostic_data[message.from_user.id] = diag_data
         
-        await status_msg.edit_text(report)
+        await status_msg.edit_text(report.replace('```', '').replace('**', '*'))
+        await send_guide(message)
         
         kb = InlineKeyboardBuilder()
         report_url = f"{RENDER_URL}/report/{message.from_user.id}"
@@ -392,11 +403,7 @@ async def process_answers(message: types.Message, state: FSMContext):
         await asyncio.sleep(2)
         await message.answer("🎯 Аудит завершен. Твой веб-отчет готов:", reply_markup=kb.as_markup())
         
-        # Лог админу
-        try:
-            ans_log = "\n".join([f"{i+1}: {a}" for i, a in enumerate(answers)])
-            await send_admin_alert(f"🔔 **НОВАЯ ДИАГНОСТИКА!**\n👤 {message.from_user.full_name}\n\n**ОТВЕТЫ:**\n{ans_log}\n\n**ОТЧЕТ:**\n{report[:1000]}...")
-        except: pass
+        await send_admin_log(message.from_user, report, answers)
         await state.clear()
 
 # =================================================================================================
@@ -404,7 +411,7 @@ async def process_answers(message: types.Message, state: FSMContext):
 # =================================================================================================
 
 async def handle_home(request):
-    return web.Response(text="Identity Lab System v6.4 Active")
+    return web.Response(text="Identity Lab System v6.6 Active")
 
 async def handle_report(request):
     try:
@@ -416,7 +423,7 @@ async def handle_report(request):
         if d:
             html = HTML_TEMPLATE.format(
                 user_name=d['name'], index=d['index'], remain=100-d['index'],
-                report_html=d['report'].replace('\n', '<br>'),
+                report_text=d['report'].replace('\n', '<br>'),
                 practicum_link=PRACTICUM_URL, protocol_link=PROTOCOL_URL
             )
             return web.Response(text=html, content_type='text/html')
@@ -432,12 +439,13 @@ async def on_startup(bot: Bot):
         types.BotCommand(command="start", description="Запуск"),
         types.BotCommand(command="menu", description="Управление")
     ])
-    await send_admin_alert("🚀 **Identity Lab v6.4 СИНХРОНИЗИРОВАН**\nFirestore Active. Webhook Active.")
+    await send_admin_alert("🚀 **Identity Lab v6.6 СИНХРОНИЗИРОВАН**\nFirestore Active. Webhook Active.")
 
 def main():
     app = web.Application()
     app.router.add_get('/', handle_home)
     app.router.add_get('/report/{user_id}', handle_report)
+    
     handler = SimpleRequestHandler(dispatcher=dp, bot=bot)
     handler.register(app, path=WEBHOOK_PATH)
     setup_application(app, dp, bot=bot)
