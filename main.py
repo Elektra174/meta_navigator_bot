@@ -31,7 +31,7 @@ if sys.platform != 'win32':
 
 # Загрузка конфигурации Firebase
 firebase_key_raw = os.getenv("FIREBASE_KEY")
-app_id = "identity-lab-v6" # ID для структуры Firestore
+app_id = "identity-lab-v7" # Финальный ID для структуры Firestore
 
 if firebase_key_raw:
     try:
@@ -54,7 +54,7 @@ try:
 except ImportError:
     CEREBRAS_AVAILABLE = False
 
-# Основные переменные
+# Основные переменные окружения
 TOKEN = os.getenv("BOT_TOKEN")
 AI_KEY = os.getenv("AI_API_KEY")
 RENDER_URL = os.getenv("RENDER_EXTERNAL_URL", "") 
@@ -66,9 +66,9 @@ WEBHOOK_URL = f"{RENDER_URL}{WEBHOOK_PATH}"
 CHANNEL_ID = "@metaformula_life"
 ADMIN_ID = 7830322013
 
-# Ресурсы проекта
+# Ресурсы проекта (Ссылки на GitHub)
 LOGO_URL = "https://raw.githubusercontent.com/Elektra174/meta_navigator_bot/main/logo.png"
-LOGO_NAVIGATOR_URL = "https://raw.githubusercontent.com/Elektra174/meta_navigator_bot/main/logo1.jpg"
+LOGO_NAVIGATOR_URL = "https://raw.githubusercontent.com/Elektra174/meta_navigator_bot/main/logo11.png"
 PROTOCOL_URL = "https://raw.githubusercontent.com/Elektra174/meta_navigator_bot/main/Autopilot_System_Protocol.pdf"
 PRACTICUM_URL = "https://www.youtube.com/@МетаформулаЖизни" 
 CHANNEL_LINK = "https://t.me/metaformula_life"
@@ -80,7 +80,7 @@ logger = logging.getLogger(__name__)
 bot = Bot(token=TOKEN)
 dp = Dispatcher(storage=MemoryStorage())
 
-# AI Client
+# AI Client (Cerebras)
 ai_client = None
 if AI_KEY and CEREBRAS_AVAILABLE:
     try:
@@ -92,12 +92,15 @@ if AI_KEY and CEREBRAS_AVAILABLE:
 class AuditState(StatesGroup):
     answering = State()
 
+# Кэш для временного хранения (на случай сбоев БД или задержек)
+diagnostic_data = {}
+
 # =================================================================================================
 # 2. ЛОГИКА ХРАНЕНИЯ (FIRESTORE)
 # =================================================================================================
 
 async def save_diagnostic(user_id, data):
-    """Сохранение результатов аудита в базу данных"""
+    """Сохранение результатов аудита в базу данных Firestore"""
     if db:
         try:
             # Путь: artifacts/{app_id}/public/data/reports/{user_id}
@@ -109,7 +112,7 @@ async def save_diagnostic(user_id, data):
     return False
 
 async def get_diagnostic(user_id):
-    """Получение результатов из базы данных для веб-страницы"""
+    """Получение результатов из базы данных для веб-страницы отчета"""
     if db:
         try:
             doc_ref = db.collection("artifacts").document(app_id).collection("public").document("data").collection("reports").document(str(user_id))
@@ -125,13 +128,13 @@ async def get_diagnostic(user_id):
 # =================================================================================================
 
 QUESTIONS = [
-    "📍 **Точка 1: Локация.**\nВ какой сфере жизни или в каком деле ты сейчас чувствуешь пробуксовку? Опиши ситуацию, где твои усилия не дают результата.",
+    "📍 **Точка 1: Локация.**\nВ какой сфере жизни или в каком деле ты сейчас чувствуешь пробуксовку? Опиши ситуацию, где твои усилия не дают того результата, на который ты рассчитываешь.",
     "📍 **Точка 2: Мета-Маяк.**\nПредставь, что задача решена на 100%. Какой ты теперь? Подбери 3–4 слова (например: спокойный, мощный, свободный). Как ты себя чувствуешь?",
-    "📍 **Точка 3: Архивный режим.**\nКакая «мыслительная жвачка» крутится у тебя в голове, когда ты думаешь о переменах? Какие сомнения ты себе приводишь?",
+    "📍 **Точка 3: Архивный режим.**\nКакая «мыслительная жвачка» крутится у тебя в голове, когда ты думаешь о переменах? Какие сомнения или доводы ты себе приводишь?",
     "📍 **Точка 4: Сцена.**\nПредставь перед собой пустую сцену и вынеси на неё то, что тебе мешает (твой затык). На что бы оно могло быть похоже?",
-    "📍 **Точка 5: Детекция сигнала.**\nПосмотри на этот предмет на сцене. Где и какое ощущение возникает в теле (сжатие, холод, ком)? Что ты именно сейчас делаешь своим телом (напрягаешь мышцы, задерживаешь дыхание)?",
+    "📍 **Точка 5: Детекция сигнала.**\nПосмотри на этот предмет на сцене. Где и какое ощущение возникает в теле (сжатие, холод, ком)? Опиши, что именно ты сейчас делаешь со своим телом?",
     "📍 **Точка 6: Биологическое Алиби.**\nТело всегда действует логично. Как ты думаешь, от чего тебя пытается защитить или уберечь эта телесная реакция?",
-    "📍 **Точка 7: Реинтеграция.**\nКакое качество в поведении других людей тебя раздражает сильнее всего? Если представить, что за этим стоит сила — что это за сила и как бы ты мог использовать её себе на пользу?",
+    "📍 **Точка 7: Реинтеграция.**\nКакое качество в поведении других людей тебя раздражает сильнее всего? Если представить, что за этим качеством стоит сила — что это за сила?",
     "📍 **Точка 8: Команда Автора.**\nТы готов признать себя Автором того, что происходит в твоем теле и твоей жизни, и перенастроить внутренний автопилот на реализацию твоих замыслов прямо сейчас?"
 ]
 
@@ -140,41 +143,11 @@ SYSTEM_PROMPT = """ТЫ — СТАРШИЙ АРХИТЕКТОР ИДЕНТИЧН
 
 ЗАДАЧА: Сформировать отчет на основе данных аудита.
 1. АВТОРСТВО: Подчеркивай, что зажим в теле — это активное действие пользователя по защите системы.
-2. СИНТЕЗ РОЛИ: Из ответов на Точку 2 создай ЕДИНУЮ РОЛЬ (например, "Мощный Творец").
-3. МЕТАФОРМУЛА: В конце отчета обязательно выдай формулу: 
-«Я Автор. Я ПРИЗНАЮ, что сам создаю этот сигнал [ответ 5] — это мой ресурс. Я НАПРАВЛЯЮ его на активацию [Синтезированная Роль]».
-
-СТРУКТУРА ОТЧЕТА:
-⬛️ [ТЕХНИЧЕСКОЕ ЗАКЛЮЧЕНИЕ: ДИАГНОСТИКА АВТОПИЛОТА] 📀
-
-Статус: Обнаружено ограничение тока энергии. Режим гомеостаза активен.
-
-📊 ИНДЕКС АВТОМАТИЗМА: [X]%
-
-🧠 ДИАГНОСТИКА КОНТУРОВ:
-
-1. УЗЕЛ СОПРОТИВЛЕНИЯ: Образ "[ответ 4]" вызывает сигнал "[ответ 5]". Это твое активное действие по защите системы.
-2. ХОЛОСТОЙ ХОД (Архивный режим): Мысли "[ответ 3]" — это Биологическое Алиби. Мозг тратит энергию на защиту от [ответ 6].
-3. РЕАКТОР ИДЕНТИЧНОСТИ: Раздражение на "[качество из ответа 7]" скрывает силу: "[сила из ответа 7]". Сейчас она заперта в теле.
-4. МЕТА-МАЯК (Эталонная Идентичность): Твоя новая роль — [СИНТЕЗИРОВАННАЯ РОЛЬ]. В этом состоянии ты [описание из ответа 2].
-
-🛠 МИНИ-ПРАКТИКУМ: РЕИНТЕГРАЦИЯ СИЛЫ
-1. Детекция: Посмотри на образ "[ответ 4]". Заметь [ответ 5].
-2. Авторство: Скажи: «Я сам создаю это напряжение. Это МОЯ энергия».
-3. Реинтеграция: Представь, как сила из образа возвращается и присваивается телом. Образ растворяется.
-4. Сдвиг: Почувствуй себя [СИНТЕЗИРОВАННАЯ РОЛЬ].
-
-⚡️ КОД ПЕРЕПРОШИВКИ (МЕТАФОРМУЛА):
-> «Я Автор. Я ПРИЗНАЮ, что сам создаю этот сигнал [ответ 5] — это мой ресурс. Я НАПРАВЛЯЮ его на активацию [СИНТЕЗИРОВАННАЯ РОЛЬ]».
-
-(Произнеси это вслух).
-
-[🎯 ДАЛЬНЕЙШАЯ ДИРЕКТИВА]:
-Скачай Гайд и переходи к Практикуму для закрепления (окно 4 часа).
-"""
+2. МЕТАФОРМУЛА: В конце отчета обязательно выдай формулу: 
+«Я Автор. ПРИЗНАЮ, что сам создаю этот сигнал [ответ 5] — это мой ресурс. НАПРАВЛЯЮ его на активацию [Синтезированная Роль из ответа 2]»."""
 
 # =================================================================================================
-# 4. ШАБЛОН ВЕБ-ОТЧЕТА (GOLD & OBSIDIAN - STYLED)
+# 4. ШАБЛОН ВЕБ-ОТЧЕТА (CYBER-MYSTICISM)
 # =================================================================================================
 
 HTML_TEMPLATE = """
@@ -194,19 +167,16 @@ HTML_TEMPLATE = """
         .cyber-card {{ background: var(--card-bg); border: 1px solid #333; border-left: 4px solid var(--gold); padding: 24px; border-radius: 8px; margin-bottom: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }}
         .btn-gold {{ background: linear-gradient(to right, #b4932c, #D4AF37); color: #000; font-weight: bold; padding: 14px 28px; border-radius: 6px; text-transform: uppercase; transition: all 0.3s; display: inline-block; }}
         .btn-gold:hover {{ transform: translateY(-2px); box-shadow: 0 0 15px rgba(212, 175, 55, 0.4); }}
-        .text-gold {{ color: var(--gold); }}
-        .text-cyan {{ color: var(--cyan); }}
     </style>
 </head>
 <body class="p-4 md:p-8 max-w-4xl mx-auto min-h-screen flex flex-col items-center selection:bg-yellow-900 selection:text-white">
-    <header class="text-center mb-12 border-b border-gray-800 pb-8">
+    <header class="text-center mb-12 border-b border-gray-800 pb-8 w-full">
         <p class="text-xs text-cyan tracking-[0.3em] uppercase mb-2 mono">Neuro-Architecture System</p>
         <h1 class="text-5xl md:text-7xl font-bold text-gold mb-2 tracking-tight">IDENTITY LAB</h1>
         <p class="text-xl text-gray-400">Персональная карта дешифровки: <span class="text-white">{user_name}</span></p>
     </header>
     
     <main class="w-full flex-grow">
-        <!-- Chart Section -->
         <div class="cyber-card flex flex-col md:flex-row items-center gap-8 justify-center">
             <div class="relative w-40 h-40 flex-shrink-0">
                  <canvas id="statusChart"></canvas>
@@ -215,31 +185,24 @@ HTML_TEMPLATE = """
                  </div>
             </div>
             <div class="text-center md:text-left">
-                <h2 class="text-xl font-bold text-white mb-2">Индекс Автоматизма</h2>
-                <p class="text-gray-400 text-sm max-w-md">
-                    Ваша система работает в режиме защиты (<span class="text-gold">Биологическое Алиби</span>).
-                </p>
+                <h2 class="text-xl font-bold text-white mb-2 uppercase">Индекс Автоматизма</h2>
+                <p class="text-gray-400 text-sm max-w-md">Ваша система работает в режиме защиты (<span class="text-gold">Биологическое Алиби</span>).</p>
             </div>
         </div>
 
-        <!-- Report Text -->
         <div class="cyber-card">
             <h2 class="text-xl font-bold text-white mb-4 border-b border-gray-800 pb-2 flex items-center">
                 <span class="text-gold mr-2">⚡️</span> НЕЙРО-СИНТЕЗ ДАННЫХ
             </h2>
             <div class="mono whitespace-pre-wrap text-gray-300 text-sm md:text-base leading-relaxed">
-{report_text}
+{report_html}
             </div>
         </div>
 
-        <!-- CTA -->
         <div class="text-center py-8 space-y-6">
-            <p class="text-gray-400 text-sm">Окно нейропластичности открыто (4 часа).<br>Закрепите результат действием.</p>
             <div class="flex flex-col md:flex-row gap-4 justify-center">
                 <a href="{practicum_link}" class="btn-gold">🚀 ЗАПУСТИТЬ ПРАКТИКУМ</a>
-                <a href="{protocol_link}" class="border border-gray-700 text-gray-400 hover:text-white py-3 px-8 rounded uppercase font-bold transition hover:bg-gray-800 flex items-center justify-center text-sm">
-                    📥 Скачать Гайд
-                </a>
+                <a href="{protocol_link}" class="border border-gray-700 text-gray-400 hover:text-white py-3 px-8 rounded uppercase font-bold transition hover:bg-gray-800 text-sm">📥 Скачать Гайд</a>
             </div>
         </div>
     </main>
@@ -255,7 +218,7 @@ HTML_TEMPLATE = """
             data: {{
                 labels: ['Автоматизм', 'Авторство'],
                 datasets: [{{
-                    data: [{idx}, {inv_idx}],
+                    data: [{idx}, {remain}],
                     backgroundColor: ['#1f1f1f', '#D4AF37'],
                     borderColor: '#050505',
                     borderWidth: 3,
@@ -270,11 +233,11 @@ HTML_TEMPLATE = """
 """
 
 # =================================================================================================
-# 5. СЛУЖЕБНЫЕ ФУНКЦИИ И ЛОГИКА
+# 5. СЛУЖЕБНЫЕ ФУНКЦИИ И ЛОГИКА ВАЛИДАЦИИ
 # =================================================================================================
 
 async def send_admin_alert(text: str):
-    """Уведомления для владельца бота"""
+    """Уведомления для владельца бота (Админ-панель)"""
     try:
         await bot.send_message(ADMIN_ID, text, disable_web_page_preview=True, parse_mode="Markdown")
     except: pass
@@ -282,13 +245,33 @@ async def send_admin_alert(text: str):
 def calculate_index(answers):
     """Оценка степени застоя по ключевым словам в ответах"""
     text = " ".join(answers).lower()
-    markers = ['не знаю', 'боюсь', 'страх', 'лень', 'тупик', 'тяжело', 'сжатие', 'ком']
+    markers = ['не знаю', 'боюсь', 'страх', 'лень', 'тупик', 'тяжело', 'сжатие', 'ком', 'холод']
     count = sum(1 for m in markers if m in text)
     return min(95, max(60, 72 + (count * 4)))
 
+def validate_input_robust(text, step):
+    """Мгновенная интеллектуальная проверка ответа на абракадабру"""
+    t = text.strip()
+    
+    # 1. Пороги длины по шагам
+    min_lens = {0: 10, 1: 5, 2: 10, 3: 4, 4: 5, 5: 5, 6: 5, 7: 2}
+    if len(t) < min_lens.get(step, 3):
+        return False
+        
+    # 2. Проверка на гласные (защита от 'ывмывм' и 'щкдш')
+    vowels = re.findall(r'[аеёиоуыэюяaeiouy]', t.lower())
+    if not vowels and step != 7: # В точке 8 допустимы короткие ответы типа "Да"
+        return False
+
+    # 3. Проверка на повторы символов
+    if re.match(r'^(\w)\1+$', t):
+        return False
+        
+    return True
+
 async def get_ai_report(answers):
     """Формирование экспертного отчета через ИИ с повторами при сбоях"""
-    if not ai_client: return "⬛️ [ДЕМО-РЕЖИМ]\nТы — Автор. Признай силу и действуй."
+    if not ai_client: return "Я Автор. ПРИЗНАЮ силу своего сигнала и НАПРАВЛЯЮ её на Творчество."
     
     data_str = "ДАННЫЕ АУДИТА:\n" + "\n".join([f"T{i+1}: {a}" for i, a in enumerate(answers)])
     for attempt in range(3):
@@ -301,7 +284,7 @@ async def get_ai_report(answers):
         except Exception as e:
             if attempt == 2: await send_admin_alert(f"🚨 **СБОЙ AI API!**\n`{str(e)[:150]}`")
             await asyncio.sleep(2 ** attempt)
-    return "Синхронизация ограничена. Но код прежний: Я Автор. ПРИЗНАЮ свою силу."
+    return "Синхронизация ограничена. Я Автор. ПРИЗНАЮ силу своего сигнала."
 
 async def check_sub(user_id):
     """Проверка подписки на канал проекта"""
@@ -311,18 +294,20 @@ async def check_sub(user_id):
     except: return False
 
 def get_main_keyboard():
+    """Клавиатура главного меню"""
     builder = InlineKeyboardBuilder()
-    builder.row(types.InlineKeyboardButton(text="🚀 Новый Аудит", callback_data="run"))
+    builder.row(types.InlineKeyboardButton(text="🚀 Начать Аудит", callback_data="run"))
     builder.row(types.InlineKeyboardButton(text="📥 Скачать Гайд", callback_data="get_guide"))
     builder.row(types.InlineKeyboardButton(text="⚡️ Практикум", url=PRACTICUM_URL))
     builder.row(types.InlineKeyboardButton(text="💬 ПОДДЕРЖКА", url=SUPPORT_LINK))
     return builder.as_markup()
 
 def get_reply_menu():
+    """Постоянная нижняя кнопка МЕНЮ"""
     return ReplyKeyboardBuilder().row(types.KeyboardButton(text="≡ МЕНЮ")).as_markup(resize_keyboard=True)
 
 async def send_guide(message: types.Message):
-    """Отправка PDF Гайда"""
+    """Отправка PDF Гайда пользователю"""
     try:
         await message.answer("📥 **Формирую ваш Технический Паспорт (Гайд)...**", parse_mode="Markdown")
         async with ClientSession() as session:
@@ -331,16 +316,15 @@ async def send_guide(message: types.Message):
                     pdf_data = await resp.read()
                     await message.answer_document(
                         document=types.BufferedInputFile(pdf_data, filename="ПРОТОКОЛ_ДЕШИФРОВКИ.pdf"),
-                        caption="📘 Ваш Гайд готов.\n\nВнутри — секрет 'Ловушки Интеллекта' и почему просто 'понимать' недостаточно для роста."
+                        caption="📘 Ваш Гайд готов.\n\nВнутри — секрет 'Ловушки Интеллекта' и механика миелинизации."
                     )
-                else:
-                    raise Exception(f"Failed to download PDF: {resp.status}")
+                else: raise Exception("404")
     except Exception as e:
         logger.error(f"Guide send error: {e}")
-        await message.answer(f"📥 Не удалось отправить файл напрямую. Скачайте его по ссылке:\n{PROTOCOL_URL}")
+        await message.answer(f"📥 Ссылка на Гайд:\n{PROTOCOL_URL}")
 
 async def send_admin_log(user: types.User, report: str, answers: list):
-    """Логирование действий в админку"""
+    """Детальное логирование действий пользователя для админа"""
     try:
         ans_log = "\n".join([f"{i+1}: {a}" for i, a in enumerate(answers)])
         await bot.send_message(
@@ -357,10 +341,11 @@ async def send_admin_log(user: types.User, report: str, answers: list):
 
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message, state: FSMContext):
+    """Команда /start: Сброс состояний и проверка подписки"""
     await state.clear()
     is_sub = await check_sub(message.from_user.id)
     
-    # Показываем нижнюю клавиатуру сразу (для всех)
+    # Показываем нижнюю клавиатуру сразу
     await message.answer("Система загружается...", reply_markup=get_reply_menu())
     
     kb = InlineKeyboardBuilder()
@@ -374,21 +359,18 @@ async def cmd_start(message: types.Message, state: FSMContext):
         )
         await message.answer_photo(LOGO_URL, caption=cap, reply_markup=kb.as_markup())
     else:
-        cap = "🧠 Система синхронизирована. Готов занять место Автора и начать дешифровку коннектома?"
+        cap = "🧠 Система синхронизирована. Готов занять место Автора и начать аудит своего автопилота?"
         await message.answer_photo(LOGO_NAVIGATOR_URL, caption=cap, reply_markup=get_main_keyboard())
 
 @dp.message(F.text == "≡ МЕНЮ")
 @dp.message(Command("menu"))
 async def cmd_menu(message: types.Message):
-    await message.answer("📋 **Меню Identity Lab:**", reply_markup=get_main_keyboard(), parse_mode="Markdown")
-
-@dp.callback_query(F.data == "menu")
-async def cb_menu(cb: types.CallbackQuery):
-    await cb.answer()
-    await cb.message.answer("📋 **Меню Identity Lab:**", reply_markup=get_main_keyboard(), parse_mode="Markdown")
+    """Вызов главного меню через текст или команду"""
+    await message.answer("📋 **Панель управления Identity Lab:**", reply_markup=get_main_keyboard())
 
 @dp.callback_query(F.data == "check")
 async def check_cb(cb: types.CallbackQuery, state: FSMContext):
+    """Обработка кнопки проверки подписки"""
     if await check_sub(cb.from_user.id):
         await cb.answer("Доступ открыт!")
         await cmd_start(cb.message, state)
@@ -397,113 +379,123 @@ async def check_cb(cb: types.CallbackQuery, state: FSMContext):
 
 @dp.callback_query(F.data == "run")
 async def audit_start(cb: types.CallbackQuery, state: FSMContext):
+    """Запуск процесса Аудита (Опроса)"""
     await cb.answer()
     await state.update_data(step=0, answers=[])
-    await cb.message.answer("🔬 **Инициализация протокола.**\nОтвечай честно. Твоё тело — самый точный прибор.")
+    # Текст инициализации без "фильтров"
+    await cb.message.answer("🔬 Инициализация протокола. Будь предельно искренен с собой. Начинаем глубокий аудит твоего автопилота.")
     await asyncio.sleep(1)
     await cb.message.answer(QUESTIONS[0], parse_mode="Markdown")
     await state.set_state(AuditState.answering)
 
 @dp.callback_query(F.data == "get_guide")
 async def get_guide_cb(cb: types.CallbackQuery):
-    # Проверка базы данных (Firestore)
+    """Запрос Гайда через кнопку"""
     data = await get_diagnostic(cb.from_user.id)
-    if not data:
-        # Также проверяем локальный кэш на всякий случай
-        if cb.from_user.id not in diagnostic_data:
-            await cb.answer("🚫 Сначала пройдите Аудит!", show_alert=True)
-            return
-    
+    if not data and cb.from_user.id not in diagnostic_data:
+        await cb.answer("🚫 Сначала пройдите Аудит!", show_alert=True)
+        return
     await cb.answer("Отправляю...")
     await send_guide(cb.message)
 
 @dp.message(AuditState.answering)
 async def process_answers(message: types.Message, state: FSMContext):
-    if not message.text or message.text == "≡ МЕНЮ": return
-    
-    # ВАЛИДАЦИЯ ТЕКСТА (Защита от мусора)
-    if len(message.text) < 3 or re.match(r'^(\w)\1+$', message.text):
-        await message.answer("⚠️ Данные некорректны. Пожалуйста, напишите осмысленный ответ.")
+    """Основной цикл обработки ответов на 8 точек дешифровки"""
+    if not message.text or message.text == "≡ МЕНЮ" or message.text.startswith("/"):
         return
-
+    
     data = await state.get_data()
     step, answers = data.get('step', 0), data.get('answers', [])
+    
+    # МГНОВЕННАЯ ПРОВЕРКА КАЖДОГО ШАГА (Валидация на абракадабру)
+    if not validate_input_robust(message.text, step):
+        return await message.answer(
+            "⚠️ Твой ответ слишком короткий или не содержит смысла. "
+            "Пожалуйста, напиши подробнее, чтобы система могла провести точную дешифровку."
+        )
+
+    # Сохраняем ответ
     answers.append(message.text.strip())
     
     if step + 1 < len(QUESTIONS):
+        # Переход к следующему вопросу
         await state.update_data(step=step+1, answers=answers)
         await message.answer(QUESTIONS[step+1], parse_mode="Markdown")
     else:
-        status_msg = await message.answer("🧠 **Дешифровка Коннектома... [||||||||||] 100%**")
+        # ЗАВЕРШЕНИЕ: Генерация отчета
+        status_msg = await message.answer("🧠 **Дешифровка данных... [||||||||||] 100%**")
         report = await get_ai_report(answers)
         idx = calculate_index(answers)
         
-        # Данные для сохранения
         diag_data = {
             "name": message.from_user.full_name,
-            "report": report,
+            "report": report, 
             "index": idx,
             "date": datetime.now().strftime("%d.%m.%Y %H:%M")
         }
         
-        # СОХРАНЕНИЕ: И в базу (Firestore), и в кэш (RAM)
+        # Сохраняем в Firebase и в RAM-кэш
         await save_diagnostic(message.from_user.id, diag_data)
         diagnostic_data[message.from_user.id] = diag_data
         
+        # Выводим отчет в чат
         await status_msg.edit_text(report.replace('**', '*'))
-        await send_guide(message)
         
+        # Кнопки для действий
         kb = InlineKeyboardBuilder()
         report_url = f"{RENDER_URL}/report/{message.from_user.id}"
         kb.row(types.InlineKeyboardButton(text="📊 ОТКРЫТЬ ВЕБ-ОТЧЕТ", url=report_url))
         kb.row(types.InlineKeyboardButton(text="⚡️ ПЕРЕЙТИ К ПРАКТИКУМУ", url=PRACTICUM_URL))
         
         await asyncio.sleep(2)
-        await message.answer("🎯 Аудит завершен. Твой веб-отчет готов:", reply_markup=kb.as_markup())
+        await message.answer("🎯 Аудит завершен. Твой отчет готов:", reply_markup=kb.as_markup())
         
-        # Лог админу
-        try:
-            ans_log = "\n".join([f"{i+1}: {a}" for i, a in enumerate(answers)])
-            await send_admin_alert(f"🔔 **НОВАЯ ДИАГНОСТИКА!**\n👤 {message.from_user.full_name}\n\n**ОТВЕТЫ:**\n{ans_log}\n\n**ОТЧЕТ:**\n{report[:1000]}...")
-        except: pass
+        # Логирование админу
+        await send_admin_log(message.from_user, report, answers)
         await state.clear()
 
 # =================================================================================================
-# 7. ВЕБ-СЕРВЕР
+# 7. ВЕБ-СЕРВЕР (ОТЧЕТЫ И HEALTH CHECK)
 # =================================================================================================
 
 async def handle_home(request):
-    return web.Response(text="Identity Lab System v6.7 Active")
+    """Главная страница для проверки жизни бота"""
+    return web.Response(text="Identity Lab System v7.5 Active")
 
 async def handle_report(request):
+    """Генерация динамической веб-страницы отчета"""
     try:
         user_id = int(request.match_info['user_id'])
-        d = await get_diagnostic(user_id) # Сначала пробуем из базы
-        if not d:
-            d = diagnostic_data.get(int(user_id)) # Потом из кэша
-            
+        # Сначала пробуем достать из RAM (быстро), потом из базы (надежно)
+        d = diagnostic_data.get(user_id) or await get_diagnostic(user_id)
+        
         if d:
             html = HTML_TEMPLATE.format(
-                user_name=d['name'], index=d['index'], remain=100-d['index'],
+                user_name=d['name'], 
+                idx=d['index'], 
+                remain=100-d['index'],
                 report_html=d['report'].replace('\n', '<br>'),
-                practicum_link=PRACTICUM_URL, protocol_link=PROTOCOL_URL
+                practicum_link=PRACTICUM_URL, 
+                protocol_link=PROTOCOL_URL
             )
             return web.Response(text=html, content_type='text/html')
-        return web.Response(text="Отчет не найден. Пройдите аудит в боте.", status=404)
+        return web.Response(text="Отчет не найден. Пройдите аудит в боте @meta_navigator_bot", status=404)
     except Exception as e:
-        logger.error(f"Web Error: {e}")
-        return web.Response(text="Ошибка доступа.", status=500)
+        logger.error(f"Web Report Error: {e}")
+        return web.Response(text="Ошибка доступа к данным.", status=500)
 
 async def on_startup(bot: Bot):
+    """Действия при запуске: установка Webhook и команд меню"""
     if RENDER_URL:
         await bot.set_webhook(url=WEBHOOK_URL, drop_pending_updates=True)
     await bot.set_my_commands([
-        types.BotCommand(command="start", description="Запуск"),
-        types.BotCommand(command="menu", description="Управление")
+        types.BotCommand(command="start", description="Перезапуск"),
+        types.BotCommand(command="menu", description="Главное меню")
     ])
-    await send_admin_alert("🚀 **Identity Lab v6.7 СИНХРОНИЗИРОВАН**\nFirestore Active. Webhook Active.")
+    await send_admin_alert("🚀 **Identity Lab v7.5 ОНЛАЙН**\nСистема синхронизирована с Firestore и AI Engine.")
 
 def main():
+    """Точка входа: запуск aiohttp сервера с интегрированным ботом"""
     app = web.Application()
     app.router.add_get('/', handle_home)
     app.router.add_get('/report/{user_id}', handle_report)
@@ -512,12 +504,11 @@ def main():
     handler.register(app, path=WEBHOOK_PATH)
     setup_application(app, dp, bot=bot)
     app.on_startup.append(lambda _: on_startup(bot))
+    
     web.run_app(app, host='0.0.0.0', port=PORT)
 
 if __name__ == "__main__":
     try:
         main()
     except (KeyboardInterrupt, SystemExit):
-        logger.info("Bot stopped.")
-
-
+        logger.info("Bot execution interrupted.")
