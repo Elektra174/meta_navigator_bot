@@ -1,7 +1,5 @@
 aiogram>=3.0.0
-cerebras-cloud-sdk
+aiohttp>=3.9.0
+firebase-admin>=6.5.0
+cerebras-cloud-sdk>=1.0.0
 python-dotenv
-aiohttp
-uvloop
-firebase-admin
-
