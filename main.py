@@ -57,7 +57,7 @@ app_id = "identity-lab-v10" # ID проекта для структуры Firest
 
 # Ссылки на внешние ресурсы и медиа
 LOGO_URL = "https://raw.githubusercontent.com/Elektra174/meta_navigator_bot/main/logohi.png"
-LOGO_NAVIGATOR_URL = "https://raw.githubusercontent.com/Elektra174/meta_navigator_bot/main/logo11.png"
+LOGO_NAVIGATOR_URL = "https://raw.githubusercontent.com/Elektra174/meta_navigator_bot/main/logo1.jpg"
 PROTOCOL_URL = "https://raw.githubusercontent.com/Elektra174/meta_navigator_bot/main/Autopilot_System_Protocol.pdf"
 PRACTICUM_URL = "https://www.youtube.com/@МетаформулаЖизни" 
 CHANNEL_LINK = "https://t.me/metaformula_life"
@@ -556,3 +556,4 @@ def main():
 if __name__ == "__main__":
     try: main()
     except (KeyboardInterrupt, SystemExit): pass
+
