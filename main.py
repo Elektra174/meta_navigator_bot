@@ -52,7 +52,7 @@ WEBHOOK_URL = f"{RENDER_URL}{WEBHOOK_PATH}"
 # Ссылки и ID
 CHANNEL_ID = "@metaformula_life"
 ADMIN_ID = 7830322013 
-LOGO_URL = "https://raw.githubusercontent.com/Elektra174/meta_navigator_bot/main/logohi.png"
+LOGO_URL = "https://raw.githubusercontent.com/Elektra174/meta_navigator_bot/main/logo3.png"
 LOGO_NAVIGATOR_URL = "https://raw.githubusercontent.com/Elektra174/meta_navigator_bot/main/logo1.jpg"
 PROTOCOL_URL = "https://raw.githubusercontent.com/Elektra174/meta_navigator_bot/main/Autopilot_System_Protocol.pdf"
 PRACTICUM_URL = "https://www.youtube.com/@МетаформулаЖизни" 
@@ -371,3 +371,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
